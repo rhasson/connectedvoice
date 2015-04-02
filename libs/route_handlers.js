@@ -5,7 +5,7 @@
 
 var helpers = require('./helper_functions'),
 	qs = require('querystring'),
-	_ = require('lodash'),
+	_ = require('lodash');
 //	mock = require('./mock');
 
 module.exports = {

@@ -1,0 +1,36 @@
+.content_home {
+	padding-top: 60px;
+}
+#message {
+	padding-top: 50px;
+	text-align: center;
+	display: none;
+}
+.messageinner {
+	padding: 5px !important;
+}
+.checkbox-inline {
+	padding: 0px 10px !important;
+}
+#phone_list {
+	padding-top: 10px !important;
+}
+.border {
+	border-right: 1px solid #c0c0c0;
+}
+.va-inline-space {
+	margin-right: 5px !important;
+	margin-bottom: 5px !important;
+}
+#ivr-say-message, 
+#ivr-message-text {
+	width: 500px !important;
+}
+#ivr-gather-numdigits,
+#ivr-gather-finishonkey,
+#ivr-gather-timeout {
+	width: 100px !important;
+}
+.va-action-label {
+	background-color: #dff0d8 !important;
+}

@@ -1,0 +1,7 @@
+script(type="text/x-handlebars", data-template-name="numbers/index")
+  div.row
+    div.col-md-9
+      {{#link-to "numbers.create"}}<button type="button" class="btn btn-primary">Add Number</button>{{/link-to}}
+      {{#if numbers}}
+      {{my-phone-numbers model=numbers removeNumberAction="removeNumber"}}
+      {{/if}}

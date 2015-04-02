@@ -1,0 +1,15 @@
+doctype html
+html
+  head
+    title ConnectedVoice Inc.
+    link(rel="stylesheet", type="text/css", href="/css/bootstrap.min.css")
+    link(rel="stylesheet", type="text/css", href="/css/styles.css")
+  
+  body
+    block content
+    block templates
+      include ./templates.jade
+    block js_libs
+      include ./js_libs.jade
+    block app_scripts
+      include ./app_scripts.jade

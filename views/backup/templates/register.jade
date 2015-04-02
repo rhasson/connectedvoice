@@ -1,0 +1,28 @@
+script(type="text/x-handlebars", data-template-name="register")
+  div#thankyoubox(class="span12 highlight hidden")
+    h3 Thank you for registering!  Go ahead and sign in at the top of the page.
+  div#registerbox(class="span9 hidden")
+    form.form-horizontal
+      div.form-group
+        label(for="register_firstname", class="col-sm-2 control-label") First name
+        div.col-sm-5
+          {{input type="text" placeholder="First name" class="form-control" id="register_firstname"}}
+      div.form-group
+        label(for="register_lastname", class="col-sm-2 control-label") Last name
+        div.col-sm-5
+          {{input type="text" placeholder="Last name" class="form-control" id="register_lastname"}}
+      div.form-group
+        label(for="register_company", class="col-sm-2 control-label") Company
+        div.col-sm-5
+          {{input type="text" placeholder="Comany name" class="form-control" id="register_company"}}
+      div.form-group
+        label(for="register_email", class="col-sm-2 control-label") Email
+        div.col-sm-5
+          {{input type="email" placeholder="Email" class="form-control" id="register_email" action="validateEmail" on="focus-out" bubbles=false}}
+      div.form-group
+        label(for="register_password", class="col-sm-2 control-label") Password
+        div.col-sm-5
+          {{input type="password" placeholder="Password" class="form-control" id="register_password" action="validatePassword" on="focus-out" bubbles=false}}
+      div.form-group
+        div(class="col-sm-offset-2 col-sm-5")
+          <button type="submit" class="btn btn-default" id="registerbutton" {{action 'registerAction'}}>Register</button>

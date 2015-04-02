@@ -1,0 +1,30 @@
+script(type="text/x-handlebars", data-template-name="components/add-phone-number")
+  p Lets add a phone number for customers to reach your business.
+  p.form-inline.
+    In which state (2-letter abbreviation)
+    <input type="text" class="form-control" id="state_name" placeholder="MA">
+    Or in which area code
+    <input type="text" class="form-control" id="areacode_name" placeholder="508">
+  p.form-inline Do you need a local or toll-free number
+    div.checkbox
+      label.checkbox-inline
+        <input type="checkbox" id="local_checkbox"> Local
+      label.checkbox-inline
+        <input type="checkbox" id="tollfree_checkbox"> Toll-Free
+  <button type="button" id="btnlistPhoneNumbers" class="btn btn-primary" {{action "getAvailableNumbersAction"}}>Find Numbers</button>
+  <button type="button" id="btnBuyPhoneNumbers" class="btn btn-success hidden" {{action "buyPhoneNumbersAction"}}>Get Now</button>
+  {{#if phoneList}}
+  div#phone_list.container
+    div.row
+      div.col-md-6
+        ul
+          {{#each phone in phoneList}}
+          <li id="{{tn-to-class phone.phone_number}}">
+          <p class="text-primary" {{action "selectedTn" phone}}> {{phone.friendly_name}}
+          <span {{bind-attr class=":glyphicon phone.capabilities.voice:glyphicon-earphone:hidden"}} alt="Voice"></span>
+          <span {{bind-attr class=":glyphicon phone.capabilities.SMS:glyphicon-comment:hidden"}} alt="SMS"></span>
+          <span {{bind-attr class=":glyphicon phone.capabilities.MMS:glyphicon-picture:hidden"}} alt="MMS"></span>
+          </p>
+          </li>
+          {{/each}}
+  {{/if}}

@@ -1,0 +1,30 @@
+script(type="text/x-handlebars", data-template-name="ivr/create")
+  div.col-md-12
+    div.panel.panel-primary
+      div.panel-heading
+        h3.panel-title Creating a new IVR
+      div.panel-body
+        p Creating an IVR flow is simple.  First select an action from the left and fill in the required information.
+        p Next continue adding actions to fit your needs.  When finished, click the Finish button.
+  div.col-md-12
+    div.well.well-lg
+      p#helper-message Lets define what your customer will experience when calling {{model.friendly_name}}
+      div.row
+        div.col-md-2
+          div.panel.panel-info
+            div.panel-heading
+               h3.panel-title Actions
+            div.panel-body
+              ul.list-group
+                <li class="list-group-item"><a href="#" {{action "select" "say" bubbles=false}}>SAY</a></li>
+                <li class="list-group-item"><a href="#" {{action "select" "dial" bubbles=false}}>DIAL</a></li>
+                <li class="list-group-item"><a href="#" {{action "select" "hangup" bubbles=false}}>HANGUP</a></li>
+                <li class="list-group-item"><a href="#" {{action "select" "pause" bubbles=false}}>PAUSE</a></li>
+                <li class="list-group-item"><a href="#" {{action "select" "gather" bubbles=false}}>GATHER</a></li>
+                <li class="list-group-item"><a href="#" {{action "select" "reject" bubbles=false}}>REJECT</a></li>
+                <li class="list-group-item"><a href="#" {{action "select" "message" bubbles=false}}>MESSAGE</a></li>
+        div.col-md-10(id="ivr-content")
+      div.row
+        div.col-md-12
+          <button type="button" id="btnCreateIvr" class="btn btn-default pull-right" {{action "cancelIvrAction"}}>Cancel</button>
+          <button type="button" id="btnCreateIvr" class="btn btn-primary pull-right" {{action "createIvrAction"}}>Finish</button>

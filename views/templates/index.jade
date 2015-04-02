@@ -1,0 +1,7 @@
+script(type="text/x-handlebars", data-template-name="index")
+  div.jumbotron
+    div.container
+      h1 Welcome to ConnectedVoice
+      h3 Create custom IVR workflow that meets your customer needs!
+      <button class="btn btn-primary" {{action "toggleRegister"}}>Register Today</button>
+  <div class="container"> {{render "register"}} </div>

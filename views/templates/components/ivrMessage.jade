@@ -1,0 +1,9 @@
+script(type="text/x-handlebars", data-template-name="components/ivr-message")
+  div.row(id="ivr-message-view")
+    div.form-inline
+      div.form-group
+        label.form-control.va-action-label.va-inline-space MESSAGE
+        input.form-control.va-inline-space(type="text", id="ivr-message-text", placeholder="Text")
+        label.form-control.va-action-label.va-inline-space to
+        input.form-control.va-inline-space(type="text", id="ivr-message-number", placeholder="Blank for current caller")
+        span#ivr-message-remove.glyphicon.glyphicon-remove-circle.va-inline-space

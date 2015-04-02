@@ -1,0 +1,11 @@
+script(type="text/x-handlebars", data-template-name="components/ivr-say")
+  div.row(id="ivr-say-view")
+    div.form-inline
+      div.form-group
+        label.form-control.va-action-label.va-inline-space SAY
+        input.form-control.va-inline-space(type="text", id="ivr-say-message", placeholder="Enter the text to speak")
+        label.form-control.va-action-label.va-inline-space as a
+        select.form-control.va-inline-space(id="ivr-say-voice")
+          option Woman
+          option Man
+        span#ivr-say-remove.glyphicon.glyphicon-remove-circle.va-inline-space

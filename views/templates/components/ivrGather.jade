@@ -1,0 +1,12 @@
+script(type="text/x-handlebars", data-template-name="components/ivr-gather")
+  div.row(id="ivr-gather-view")
+    div.form-inline
+      div.form-group
+        label.form-control.va-action-label.va-inline-space GATHER
+        label.form-control.va-action-label.va-inline-space How many digits
+        input.form-control.va-inline-space(type="text", id="ivr-gather-numdigits", placeholder="Unlimited")
+        label.form-control.va-action-label.va-inline-space or wait for timeout of
+        input.form-control.va-inline-space(type="text", id="ivr-gather-timeout", placeholder="5 seconds")
+        label.form-control.va-action-label.va-inline-space or a press of
+        input.form-control.va-inline-space(type="text", id="ivr-gather-finishonkey", placeholder="#")
+        span#ivr-gather-remove.glyphicon.glyphicon-remove-circle.va-inline-space

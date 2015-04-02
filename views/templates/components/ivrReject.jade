@@ -1,0 +1,10 @@
+script(type="text/x-handlebars", data-template-name="components/ivr-reject")
+  div.row(id="ivr-reject-view")
+    div.form-inline
+      div.form-group
+        label.form-control.va-action-label.va-inline-space REJECT
+        label.form-control.va-action-label.va-inline-space And play back the following tone
+        select.form-control.va-inline-space(id="ivr-reject-reason")
+          option Rejected
+          option Busy
+        span#ivr-reject-remove.glyphicon.glyphicon-remove-circle.va-inline-space

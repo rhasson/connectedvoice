@@ -1,0 +1,15 @@
+script(type="text/x-handlebars", data-template-name="home")
+  div.container.content_home
+    div.row
+      div.col-md-12
+        <h1>Welcome {{model.firstname}} {{model.lastname}}</h1>
+        {{#unless isAccountCreated}}
+        div.col-md-9
+          {{create-account model=model createAccountAction="createAccountAction"}}
+        {{else}}
+        <p class="help-block">Account has been {{model.twilio.status}} since {{format-date model.twilio.date_updated}}</p>
+        {{/unless}}
+        {{#unless model.twilio.phone_number}}
+        div.col-md-9
+          {{add-phone-number model=model phoneList=phoneList listPhoneNumbersAction="listPhoneNumbersAction" buyPhoneNumbersAction="buyPhoneNumbersAction"}}
+        {{/unless}}

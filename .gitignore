@@ -1,0 +1,8 @@
+config.json
+.DS_Store
+.DS_Store?
+package.json
+
+libs/mock.js
+node_modules/
+test/

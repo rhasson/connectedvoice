@@ -1,0 +1,13 @@
+script(type="text/x-handlebars")
+  div#message
+    div.center-block
+      div.bg-danger.messageinner
+        h4 {{notify_message}}
+  nav#nav-id(class="navbar navbar-inverse navbar-fixed-top")
+    div.container
+      div.navbar-header
+        a.navbar-brand(href="/") Voice Assist
+      div#navbar(class="navbar-collapse collapse")
+        {{log-in isLoggedIn=isLoggedIn loginAction="redirectOnLogin" logoutAction="redirectOnLogout" notifyMessage="notifyMessage"}}
+
+  {{outlet}}

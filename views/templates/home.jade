@@ -1,0 +1,11 @@
+script(type="text/x-handlebars", data-template-name="home")
+  div.container.content_home
+    div.row
+      div.col-md-12
+        <h1>Welcome {{model.first_name}} {{model.last_name}}</h1>
+        {{#if isAccountCreated}}
+        <p class="help-block">Account has been {{model.twilio.status}} since {{format-date model.twilio.date_updated}}</p>
+        {{/if}}
+    div.row
+      div.col-md-12
+        {{outlet}}

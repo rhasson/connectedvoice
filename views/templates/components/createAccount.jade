@@ -1,0 +1,5 @@
+script(type="text/x-handlebars", data-template-name="components/create-account")
+  p Lets begin by creating an account for your business.
+  p.form-inline Select an account name
+    <input type="text" class="form-control" id="account_name" placeholder="{{model.company}}">
+    <button type="button" id="btnCreateAccount" class="btn btn-primary" {{action "createAccountAction"}}>Create</button>

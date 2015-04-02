@@ -1,0 +1,7 @@
+script(type="text/x-handlebars", data-template-name="index")
+  div.jumbotron
+    div.container
+      h1 Welcome to Voice Assist
+      h3 Create custom IVR workflow that fits your business
+      <button class="btn btn-primary" {{action "toggleRegister"}}>Register Today</button>
+  <div class="container"> {{render "register"}} </div>

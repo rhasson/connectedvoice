@@ -1,0 +1,11 @@
+script(type="text/x-handlebars", data-template-name="ivr/index")
+  div.col-md-8
+    p The following IVRs have been created.  You may create as many as you like.
+    p Only after you've associated the IVR with a particular phone will it be activated.
+  div.col-md-8
+    <button type="button" id="btnCreateIvr" class="btn btn-primary" {{action "createIvrAction"}}>Start Here</button>
+  div.col-md-8
+    ul
+      {{#each item in model.ivrs}}
+      li item.name
+      {{/each}}

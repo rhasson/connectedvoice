@@ -6,7 +6,7 @@
 var helpers = require('./helper_functions'),
 	qs = require('querystring'),
 	_ = require('lodash'),
-	mock = require('./mock');
+//	mock = require('./mock');
 
 module.exports = {
 	indexHandler: function(request, reply) {

@@ -6,3 +6,4 @@ package.json
 libs/mock.js
 node_modules/
 test/
+private/

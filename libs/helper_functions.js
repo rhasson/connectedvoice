@@ -308,7 +308,7 @@ module.exports = helpers = {
 				record = helpers.formatUserRecord(doc);
 				ivr_ids = _.pluck(record.number, 'ivr_id');
 				return helpers.getIvrRecord(ivr_ids).then(function(results) {
-					record.ivr = helpers.formatIvrRecord(results);
+					record.ivr = results;
 					return when.resolve(record);
 				});
 /*				return dbfetch({keys:ivr_ids}).then(function(ivrs) {
@@ -328,11 +328,12 @@ module.exports = helpers = {
 	deleteIvrRecord: function(params) {
 
 	},
-	setupActionVerbs: function(actions, userid) {
+	setupActionVerbs: function(actions, user_id) {
 		var arr = [];
 		var length, count=0, t;
 		var seperator = '...';
 		var limit = 1600;
+		var userid = new Buffer(user_id, 'utf8').toString('base64');
 
 		actions.forEach(function(item) {
 			switch (item.verb) {

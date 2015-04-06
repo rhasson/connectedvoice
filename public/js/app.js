@@ -542,7 +542,7 @@ App.IvrCreateController = Ember.Controller.extend({
 			var params;
 			var ivr;
 
-			verbs = serialize(ids);
+			verbs = serialize(ids, this);
 
 			ivr = this.store.createRecord('ivr');
 			ivr.set('number_id', self.model);
@@ -737,8 +737,8 @@ function toggleMessageSlide() {
 	}
 }
 
-function serialize(ids) {
-	var self = this;
+function serialize(ids, self) {
+	//var self = this;
 	var verbs = [];
 	var temp = [];
 

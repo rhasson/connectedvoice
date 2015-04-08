@@ -809,7 +809,7 @@ function serialize(ids, self) {
 				}
 				break;
 			case 'message':
-				//If message is longer than 1600 chars, notify user that text will be breaken into multiple messages
+				//If message is longer than 1600 chars, notify user that text will be broken into multiple messages
 				ret = {
 					verb: action,
 					nouns: {
@@ -817,8 +817,8 @@ function serialize(ids, self) {
 						//media: url
 					},
 					attributes: {
-						to: $el.find('#ivr-message-number').val(),
-						from: this.model.get('phone_number') //this.store.getById('number', this.model.get('id')).get('phone_number')
+						to: $el.find('#ivr-message-number').val()
+						//from: this.model.get('phone_number')
 					}
 				}
 				if (ret.attributes.to === '') delete ret.attributes.to;

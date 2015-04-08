@@ -351,9 +351,10 @@ module.exports = helpers = {
 					item.attributes.method = 'POST';
 					item.attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
 					item.attributes.statusCallback = config.callbacks.StatusCallback.replace('%userid', userid);
-					
+					arr.push(item);
+										
 					//breaks up message body larger than 1600 characters into multiple messages
-					length = item.nouns.body.length;
+/*					length = item.nouns.body.length;
 					while (count < length) {
 						if (count > 0) count -= 2;
 						t = _.trunc(item.nouns.body.slice(count), {separator:/\s|\?|!/g, length: limit});
@@ -362,6 +363,7 @@ module.exports = helpers = {
 						arr.push(item)
 					}
 					count = 0;
+*/
 					break;
 				default: 
 					arr.push(item);

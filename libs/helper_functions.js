@@ -338,19 +338,19 @@ module.exports = helpers = {
 		actions.forEach(function(item) {
 			switch (item.verb) {
 				case 'gather':
-					item.attributes.method = 'POST';
-					item.attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
+					item.verb_attributes.method = 'POST';
+					item.verb_attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
 					arr.push(item);
 					break;
 				case 'dial':
-					item.attributes.method = 'POST';
-					item.attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
+					item.verb_attributes.method = 'POST';
+					item.verb_attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
 					arr.push(item);
 					break;
 				case 'message':
-					item.attributes.method = 'POST';
-					item.attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
-					item.attributes.statusCallback = config.callbacks.StatusCallback.replace('%userid', userid);
+					item.verb_attributes.method = 'POST';
+					item.verb_attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
+					item.verb_attributes.statusCallback = config.callbacks.StatusCallback.replace('%userid', userid);
 					arr.push(item);
 										
 					//breaks up message body larger than 1600 characters into multiple messages

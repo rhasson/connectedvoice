@@ -1,6 +1,11 @@
 //Main Emberjs App file
 
-App = Ember.Application.create();
+App = Ember.Application.create({
+	ready: function() {
+		App.IvrViewContainer = Ember.ContainerView.create();
+		//App.IvrViewContainer.appendTo("#ivr-content");
+	}
+});
 App._verimail = new Comfirm.AlphaMail.Verimail();
 
 /********************** MODEL DEFINITION **********************************/
@@ -39,6 +44,96 @@ App.Status = DS.Model.extend({
 	status: DS.attr('number'),
 	reason: DS.attr('text')
 });
+
+App.Ivrsay = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'say',
+	nouns: {
+		text: null
+	},
+	verb_attributes: {
+		voice: 'Woman',
+		loop: 1,
+		language: 'en'
+	},
+	params: {
+		voice_options: ['Woman', 'Man']
+	}
+});
+
+App.Ivrdial = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'dial',
+	nouns: {
+		text: null
+	},
+	verb_attributes: {
+		timeout: 30,
+		record: 'do-not-record',
+		hangupOnStar: false,
+		timeLimit: 14400,
+		callerId: null
+	},
+	params: {}
+});
+
+App.Ivrhangup = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'hangup',
+	nouns: {},
+	verb_attributes: {},
+	params: {}
+});
+
+App.Ivrpause = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'pause',
+	nouns: {},
+	verb_attributes: {
+		len: 1
+	},
+	params: {}
+});
+
+App.Ivrreject = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'reject',
+	nouns: {},
+	verb_attributes: {
+		reason: 'Rejected'
+	},
+	params: {
+		reason_options: ['Rejected', 'Busy']
+	}
+});
+
+App.Ivrmessage = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'message',
+	nouns: {
+		body: null
+	},
+	verb_attributes: {
+		to: null
+	},
+	params: {}
+});
+
+App.Ivrgather = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'gather',
+	children: [],
+	nouns: {},
+	verb_attributes: {
+		timeout: 5,
+		numDigits: 'unlimited',
+		finishOnKey: '#'
+	},
+	params: {
+		nesting_rules: ['say', 'play', 'pause']
+	}
+});
+
 /*********************************************************************/
 
 /* Application router definition */
@@ -59,7 +154,6 @@ App.Router.map(function() {
 		this.resource('ivr', {path: '/ivr/:account_id'}, function() {
 			this.route('index', {path: '/'});
 			this.route('create');
-			this.route('edit', {path: '/ivr/:account_id/:ivr_id'});
 			this.route('remove', {path: '/ivr/:account_id/:ivr_id'});
 		});
 	});
@@ -113,6 +207,9 @@ App.SessionController = Ember.Controller.extend({
 		} else {
 			this.set('vaSession_MemoryStore', undefined);
 		}
+		this.store.unloadAll('account');
+		this.store.unloadAll('number');
+		this.store.unloadAll('ivr');
 		this.set('isLoggedIn', this.isSessionPresent());
 	},
 	isSessionPresent: function() {
@@ -245,16 +342,18 @@ App.HomeRoute = Ember.Route.extend({
 	},
 	model: function() {
 		console.log('CALLING HOME MODEL')
+		var self = this;
 		var session = this.controllerFor('session');
 		var id = session.getSession();
 
-		return this.store.find('account', id).then(function(data) {
+		return this.store.fetchById('account', id).then(function(data) {
 			console.log('data: ', data)
 			if ('status' in data && data.status === 1) throw new Error('Not logged in');
 			else return data;
 		}).catch(function(err) {
 			console.log('home error: ', err)
 			session.clearSession();
+			self.transitionTo('/');
 			return undefined;
 		});
 
@@ -491,61 +590,22 @@ App.IvrRoute = Ember.Route.extend({
 	},
 	setupController: function(controller, model) {
 		controller.set('model', model);
-		console.log('IVR model: ', model)
-
-		if (id = model.get('ivr_id')) {
-			this.transitionTo('ivr.edit', model);
-		}
-		
-		$('.content_home').on('click', '.glyphicon-remove-circle', this.clickHandler);
-		$('.content_home').on('click', '.glyphicon-arrow-right', this.clickHandler);
-	},
-	clickHandler: function(evt) {
-		evt.preventDefault();
-		evt.stopPropagation();
-
-		var id = $(evt.currentTarget).parents('.row')[0].id;
-		var isNested = /nested/.test(evt.currentTarget.id);
-		var next_el = $('#'+id).next().attr('id');
-
-		$('#'+id).remove();
-		if (/nested/.test(next_el)) $('#'+next_el).remove();
-		if (isNested) {
-			if (/say/.test(evt.currentTarget.id)) $('#ivr-content').append('<div id="ivr-say-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">SAY</label><input type="text" id="ivr-say-message" placeholder="Enter the text to speak" class="form-control va-inline-space"/><label class="form-control va-action-label va-inline-space">as a</label><select id="ivr-say-voice" class="form-control va-inline-space"><option>Woman</option><option>Man</option></select><span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-			else if (/pause/.test(evt.currentTarget.id)) $('#ivr-content').append('<div id="ivr-pause-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">PAUSE</label><input type="text" id="ivr-pause-duration" placeholder="Duration in seconds" class="form-control va-inline-space"/><span id="ivr-pause-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-		}
-	}, 
-	willDestroy: function() {
-		$('.content_home').off('click', '.glyphicon-remove-circle', this.clickHandler);
-		$('.content_home').off('click', '.glyphicon-arrow-right', this.clickHandler);
-	}
-});
-
-App.IvrIndexController = Ember.Controller.extend({
-	needs: ['home'],
-	actions: {
-		createIvrAction: function() {
-			this.transitionToRoute('ivr.create', this.model);
-		}
 	}
 });
 
 App.IvrCreateController = Ember.Controller.extend({
 	needs: ['home', 'session', 'application'],
-	div_counter: 0,
 	actions: {
 		createIvrAction: function() {
 			var self = this;
-			var $content = $('#ivr-content');
-			var ids = $content.children().map(function(i, el) {return el.id}).toArray();
-			var verbs = [];
-			var params;
-			var ivr;
+			var containerView = Ember.View.views['ivrcontainerview'];
+			var views = containerView.get('childViews');
 
-			verbs = serialize(ids, this);
+			var verbs = serializeIvr(views);
 
-			ivr = this.store.createRecord('ivr');
-			ivr.set('number_id', self.model);
+			var ivr = this.store.createRecord('ivr');
+
+			ivr.set('number_id', this.model);
 			ivr.set('account_id', this.get('controllers.home').get('model'));
 			ivr.set('actions', verbs);
 			ivr.set('date_updated', new Date());
@@ -553,7 +613,12 @@ App.IvrCreateController = Ember.Controller.extend({
 				var model;
 				console.log('Saving IVR: ', resp);
 				if ('status' in resp && resp.status === 1) throw (resp);
-				//self.store.pushPayload('account', resp);
+				
+				containerView.toArray().forEach(function(view) {
+					self.store.deleteRecord(view.model);
+					containerView.removeObject(view);
+				});
+
 				model = self.get('controllers.home').get('model');
 				self.transitionToRoute('numbers.index', model.get('id'));
 			}).catch(function(err) {
@@ -562,66 +627,226 @@ App.IvrCreateController = Ember.Controller.extend({
 				if ('status' in err && err.status === 1) msg = err.reason;
 				else msg = "Failed to make request.  Please try again later. - "+ err;
 
-				self.get("controllers.application").set('notify_message', 'Failed to provision phone number.  ('+msg+')');
+				self.get("controllers.application").set('notify_message', 'Failed to save IVR.  ('+msg+')');
 				toggleMessageSlide();
 			});
 		},
-		select: function(name) {
-			switch(name) {
-				case 'say':
-					if (this.canNest()) {
-						$('#ivr-content').append('<div id="ivr-say-nested-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><span id="ivr-say-nested-remove" class="glyphicon glyphicon-arrow-right va-inline-space"></span><label class="form-control va-action-label va-inline-space">SAY</label><input type="text" id="ivr-say-message" placeholder="Enter the text to speak" class="form-control va-inline-space"/><label class="form-control va-action-label va-inline-space">as a</label><select id="ivr-say-voice" class="form-control va-inline-space"><option>Woman</option><option>Man</option></select><span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					} else $('#ivr-content').append('<div id="ivr-say-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">SAY</label><input type="text" id="ivr-say-message" placeholder="Enter the text to speak" class="form-control va-inline-space"/><label class="form-control va-action-label va-inline-space">as a</label><select id="ivr-say-voice" class="form-control va-inline-space"><option>Woman</option><option>Man</option></select><span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					this.div_counter++;
+		cancelIvrAction: function(el) {
+			var self = this;
+			var model = this.get('controllers.home').get('model');
+			var containerView = Ember.View.views['ivrcontainerview'];
+
+			containerView.toArray().forEach(function(view) {
+				self.store.deleteRecord(view.model);
+				containerView.removeObject(view);
+			});
+
+			this.transitionToRoute('numbers.index', model.get('id'));
+		},
+		removeIvrItemAction: function(view) {
+			var containerView = Ember.View.views['ivrcontainerview'];
+			this.store.deleteRecord(view.model);
+			containerView.removeObject(view);
+		},
+		unNestIvrItemAction: function(view) {
+			var containerView = Ember.View.views['ivrcontainerview'];
+			var current_id = view.model.get('index');
+
+			var arr = containerView.toArray();
+
+			for (var i=0, id, temp, v; i < arr.length; i++) {
+				v = arr[i];
+				id = v.model.get('index');
+				if (id === current_id) {
+					//take existing values and remove word nested from them
+					temp = v.get('templateName');
+					v.set('templateName', temp.replace(/-nested$/, ''));
+					temp = v.get('classNames').toArray().map(function(x) {
+						if (/-nested/.test(x)) x = x.replace(/-nested[0-9]+.$/, ''+id);
+						return x;
+					});
+					v.set('classNames', temp);
+					delete v.parent_id
+					v.rerender();
+					containerView.removeObject(view);
+					containerView.pushObject(v);
 					break;
-				case 'dial':
-					$('#ivr-content').append('<div id="ivr-dial-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">DIAL</label><input type="text" id="ivr-dial-number" placeholder="Phone number" class="form-control va-inline-space"/><label class="form-control va-action-label va-inline-space">after how many seconds</label><input type="text" id="ivr-dial-timeout" placeholder="Timeout" class="form-control va-inline-space"/><span id="ivr-dial-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					this.div_counter++;
-					break;
-				case 'hangup':
-					$('#ivr-content').append('<div id="ivr-hangup-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">HANGUP</label><span id="ivr-hangup-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					this.div_counter++;
-					break;
-				case 'pause':
-					if (this.canNest()) {
-						$('#ivr-content').append('<div id="ivr-pause-nested-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><span id="ivr-pause-nested-remove" class="glyphicon glyphicon-arrow-right va-inline-space"></span><label class="form-control va-action-label va-inline-space">PAUSE</label><input type="text" id="ivr-pause-duration" placeholder="Duration in seconds" class="form-control va-inline-space"/><span id="ivr-pause-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					} else $('#ivr-content').append('<div id="ivr-pause-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">PAUSE</label><input type="text" id="ivr-pause-duration" placeholder="Duration in seconds" class="form-control va-inline-space"/><span id="ivr-pause-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					this.div_counter++;
-					break;
-				case 'reject':
-					$('#ivr-content').append('<div id="ivr-reject-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">REJECT</label><label class="form-control va-action-label va-inline-space">And play back the following tone</label><select id="ivr-reject-reason" class="form-control va-inline-space"><option>Rejected</option><option>Busy</option></select><span id="ivr-reject-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					this.div_counter++;
-					break;
-				case 'message':
-					$('#ivr-content').append('<div id="ivr-message-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">MESSAGE</label><input type="text" id="ivr-message-text" placeholder="Text" class="form-control va-inline-space"/><label class="form-control va-action-label va-inline-space">to</label><input type="text" id="ivr-message-number" placeholder="Blank for current caller" class="form-control va-inline-space"/><span id="ivr-message-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					this.div_counter++;
-					break;
-				case 'gather':
-					$('#ivr-content').append('<div id="ivr-gather-view'+this.div_counter+'" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">GATHER</label><label class="form-control va-action-label va-inline-space">How many digits</label><input type="text" id="ivr-gather-numdigits" placeholder="Unlimited" class="form-control va-inline-space"/><label class="form-control va-action-label va-inline-space">or wait for timeout of</label><input type="text" id="ivr-gather-timeout" placeholder="5 seconds" class="form-control va-inline-space"/><label class="form-control va-action-label va-inline-space">or a press of</label><input type="text" id="ivr-gather-finishonkey" placeholder="#" class="form-control va-inline-space"/><span id="ivr-gather-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div>');
-					this.div_counter++;
-					break;
+				}
 			}
 		},
-		cancelIvrAction: function(el) {
-			//find the element id and remove that view
-			var model = this.get('controllers.home').get('model');
-			this.transitionToRoute('numbers.index', model.get('id'));
+		select: function(name, model) {
+			var containerView = Ember.View.views['ivrcontainerview'];
+			var viewClass, id, parent;
+			switch(name) {
+				case 'say':
+					parent = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
+					id = Date.now();
+				
+					model = this.store.createRecord('ivrsay', model);
+					model.set('index', id);
+					viewClass = Ember.View.extend({
+						model: model,
+						textObserver: function() {}.observes('model.nouns.text'),
+						selectObserver: function() {}.observes('model.verb_attributes.voice')
+					});
+					if (parent) {
+						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-say-nested', classNames: ['row', 'ivr-say-view-nested'+id]});
+						viewClass.parent_id = parent;  //include the parent id in the child view
+					} else {
+						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-say', classNames: ['row', 'ivr-say-view'+id]});
+					}
+
+					containerView.pushObject(viewClass);
+					break;
+				case 'dial':
+					id = Date.now();
+					model = this.store.createRecord('ivrdial', model);
+					model.set('index', id);
+					viewClass = Ember.View.extend({
+						classNames: ['row', 'ivr-dial-view'+id],
+						model: model,
+						templateName: 'ivr-dial',
+						textObserver: function() {}.observes('model.nouns.text'),
+						timeoutObserver: function() {}.observes('model.verb_attributes.timeout')
+					});
+
+					viewClass = containerView.createChildView(viewClass);
+					containerView.pushObject(viewClass);
+					break;
+				case 'hangup':
+					id = Date.now();
+					model = this.store.createRecord('ivrhangup', model);
+					model.set('index', id);
+					viewClass = Ember.View.extend({
+						classNames: ['row', 'ivr-hangup-view'+id],
+						model: model,
+						templateName: 'ivr-hangup'
+					});
+
+					viewClass = containerView.createChildView(viewClass);
+					containerView.pushObject(viewClass);
+					break;
+				case 'pause':
+					parent = this.canNest(name);
+					id = Date.now();
+
+					model = this.store.createRecord('ivrpause', model);
+					model.set('index', id);
+					viewClass = Ember.View.extend({
+						classNames: ['row'],
+						model: model,
+						lenObserver: function() {}.observes('model.verb_attributes.len')
+					});
+					
+					if (parent) {
+						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-pause-nested', classNames: ['row', 'ivr-pause-view-nested'+id]});
+						viewClass.parent_id = parent;  //include the parent id in the child view
+					} else {
+						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-pause', classNames: ['row', 'ivr-pause-view'+id]});
+					}
+
+					containerView.pushObject(viewClass);
+					break;
+				case 'reject':
+					id = Date.now();
+					model = this.store.createRecord('ivrreject', model);
+					model.set('index', id);
+					viewClass = Ember.View.extend({
+						classNames: ['row', 'ivr-reject-view'+id],
+						model: model,
+						templateName: 'ivr-reject',
+						lenObserver: function() {}.observes('model.verb_attributes.reason')
+					});
+
+					viewClass = containerView.createChildView(viewClass);
+					containerView.pushObject(viewClass);
+					break;
+				case 'message':
+					id = Date.now();
+					model = this.store.createRecord('ivrmessage', model);
+					model.set('index', id);
+					viewClass = Ember.View.extend({
+						classNames: ['row', 'ivr-message-view'+id],
+						model: model,
+						templateName: 'ivr-message',
+						bodyObserver: function() {}.observes('model.nouns.body'),
+						toObserver: function() {}.observes('model.verb_attributes.to')
+					});
+
+					viewClass = containerView.createChildView(viewClass);
+					containerView.pushObject(viewClass);
+					break;
+				case 'gather':
+					id = Date.now();
+					model = this.store.createRecord('ivrgather', model);
+					model.set('index', id);
+					viewClass = Ember.View.extend({
+						classNames: ['row', 'ivr-gather-view'+id],
+						model: model,
+						templateName: 'ivr-gather',
+						numDigitsObserver: function() {}.observes('model.verb_attributes.numDigits'),
+						timeoutObserver: function() {}.observes('model.verb_attributes.timeout'),
+						keyObserver: function() {}.observes('model.verb_attributes.finishOnKey')
+					});
+
+					viewClass = containerView.createChildView(viewClass);
+					containerView.pushObject(viewClass);
+					break;
+			}
 		}
-	}, 
-	canNest: function() {
-		var id = $('#ivr-content').children().map(function(i,el){return $(el).attr('id')}).toArray().pop();
-		return /gather/.test(id);
+	},
+	canNest: function(verbToNest) {
+		var nestable = ['gather'];
+		var allowedToNest = ['say', 'pause'];
+		var containerView = Ember.View.views['ivrcontainerview'];
+		var views = containerView.get('childViews');
+		var view = undefined;
+
+		views.reverse();
+		for (var i=0; i < views.length; i++) {
+			if (!('parent_id' in views[i])
+				&& nestable.indexOf(views[i].model.get('verb')) > -1 
+				&& allowedToNest.indexOf(verbToNest) > -1)
+			{
+				view = views[i].model.get('index');
+				break;
+			}
+		}
+
+		return view;
 	}
 });
 
-App.IvrEditController = Ember.Controller.extend({
-	needs: ['home', 'session', 'application'],
-	actions: {}
+App.IvrCreateView = Ember.View.extend({
+	layoutName: 'ivr/create',
+	init: function() {
+    	var actions, ivr, containerView;
+    	var childViews;
+
+		ivr = this.get('controller').get('model').get('ivr_id');
+	   	this.get('controller').set('verbs', ivr.get('actions'));
+		
+		containerView = Ember.ContainerView.create({
+			elementId: 'ivrcontainerview',
+			classNames: ['col-md-12']
+		});
+
+		this.get('controller').set('containerView', containerView);
+
+		this._super();
+	},
+	didInsertElement: function() {
+		var controller = this.get('controller');
+		var actions = controller.get('verbs');
+
+		if (actions.length) {
+			actions.forEach(function(action) {
+				controller.send('select', action.verb, action);
+			});
+		}
+	}
 });
 
-App.IvrSayComponent = Ember.Component.extend({
-	actions: {}
-})
 /*********************************************************************/
 
 /* Handlebars Helper Functions */
@@ -632,6 +857,10 @@ Ember.Handlebars.helper('format-date', function(date) {
 
 Ember.Handlebars.helper('tn-to-class', function(tn) {
 	return tn.replace('+', '');
+});
+
+Ember.Handlebars.helper('is-selected', function(model, current) {
+	return model === current ? true : false;
 });
 /********************************/
 
@@ -737,122 +966,50 @@ function toggleMessageSlide() {
 	}
 }
 
-function serialize(ids, self) {
-	//var self = this;
+function serializeIvr(views) {
 	var verbs = [];
-	var temp = [];
+	var nested = [];
+	var model, view, p_id = undefined;
 
-	function run(id) {
-		var terms, nested, action, $el, number;
-		if (!id) return;
+	for (var i=views.length-1; i >= 0; i--) {
+		view = views[i];
+		model = view.get('model');
 
-		terms = id.match(/ivr-(\w+)-(nested)?/);
-		nested = terms.pop();
-		action = terms.pop();
-		$el = $('#'+id);
-
-		switch (action) {
-			case 'say':
-				ret = {
-					verb: action,
-					nouns: {
-						text: $el.find('#ivr-say-message').val()
-					},
-					attributes: {
-						voice: $el.find('#ivr-say-voice').val(),
-						loop: 1,
-						language: 'en'
-					}
-				}
-				break;
-			case 'dial':
-				//TODO: validate phone number format
-				number = $el.find('#ivr-dial-number').val();
-				if (/[,]/.test(number)) number = number.split(',');
-				ret = {
-					verb: action,
-					nouns: {},
-					attributes: {
-						timeout: $el.find('#ivr-dial-timeout').val(),
-						record: 'do-not-record',
-						hangupOnStar: false,
-						timeLimit: 14400,
-						callerId: self.model.get('phone_number')
-					}
-				}
-				if (number instanceof Array) ret.nouns.number = number;
-				else ret.nouns.text = $el.find('#ivr-dial-number').val();
-				break;
-			case 'hangup':
-				ret = {
-					verb: action,
-					nouns: undefined,
-					attributes: undefined
-				}
-				break;
-			case 'pause':
-				ret = {
-					verb: action,
-					nouns: undefined,
-					attributes: {
-						length: $el.find('#ivr-pause-duration').val()
-					}
-				}
-				break;
-			case 'reject':
-				ret = {
-					verb: action,
-					nouns: undefined,
-					attributes: {
-						reason: $el.find('#ivr-reject-reason').val()
-					}
-				}
-				break;
-			case 'message':
-				//If message is longer than 1600 chars, notify user that text will be broken into multiple messages
-				ret = {
-					verb: action,
-					nouns: {
-						body: $el.find('#ivr-message-text').val()
-						//media: url
-					},
-					attributes: {
-						to: $el.find('#ivr-message-number').val()
-						//from: this.model.get('phone_number')
-					}
-				}
-				if (ret.attributes.to === '') delete ret.attributes.to;
-				break;
-			case 'gather':
-				//TODO: complete this verb
-				ret = {
-					verb: action,
-					nouns: undefined,
-					attributes: {
-						timeout: parseInt($el.find('#ivr-gather-timeout').val()),
-						numDigits: $el.find('#ivr-gather-numdigits').val(),
-						finishOnKey: $el.find('#ivr-gather-finishonkey').val()
-					}
-				}
-				if (ret.attributes.numDigits.length <= 0) delete ret.attributes.numDigits;
-				if (!ret.attributes.timeout || ret.attributes.timeout <= 0) ret.attributes.timeout = 5;
-				if (ret.attributes.finishOnKey.length <= 0) ret.attributes.finishOnKey = '#';
-				break;
-			default:
-				return;
+		if ('parent_id' in view) {
+			p_id = view.parent_id;
+			nested.unshift({
+				verb: model.get('verb'),
+				nouns: getOwnData(model.get('nouns')),
+				verb_attributes: getOwnData(model.get('verb_attributes')),
+			});
+		} else if (p_id && p_id === model.get('index')) {
+			verbs.unshift({
+				verb: model.get('verb'),
+				nouns: getOwnData(model.get('nouns')),
+				verb_attributes: getOwnData(model.get('verb_attributes')),
+				nested: nested
+			});
+			nested = [];
+			p_id = undefined;
+		} else {
+			verbs.unshift({
+				verb: model.get('verb'),
+				nouns: getOwnData(model.get('nouns')),
+				verb_attributes: getOwnData(model.get('verb_attributes'))
+			});
 		}
-
-		if (nested) temp.push(ret);
-		else {
-			if (temp.length) {
-				ret.nested = temp;
-				temp = [];
-			}
-			verbs.push(ret);
-		}
-		return run(ids.pop());
 	}
 
-	run(ids.pop());
-	return verbs.reverse();
+	function getOwnData(obj) {
+		var temp = {};
+		if (!Object.keys(obj).length) return undefined;
+
+		for (var i in obj) {
+			if (obj.hasOwnProperty(i)) temp[i] = obj[i];
+		}
+
+		return temp;
+	}
+
+	return verbs;
 }

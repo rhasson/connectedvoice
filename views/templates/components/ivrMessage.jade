@@ -1,9 +1,9 @@
-script(type="text/x-handlebars", data-template-name="components/ivr-message")
+script(type="text/x-handlebars", data-template-name="ivr-message")
   div.row(id="ivr-message-view")
     div.form-inline
       div.form-group
         label.form-control.va-action-label.va-inline-space MESSAGE
-        input.form-control.va-inline-space(type="text", id="ivr-message-text", placeholder="Text")
+        {{input class="form-control va-ivr-text va-inline-space" type="text" id="ivr-message-text" placeholder="Text" value=view.model.nouns.body}}
         label.form-control.va-action-label.va-inline-space to
-        input.form-control.va-inline-space(type="text", id="ivr-message-number", placeholder="Blank for current caller")
-        span#ivr-message-remove.glyphicon.glyphicon-remove-circle.va-inline-space
+        {{input class="form-control va-ivr-tn va-inline-space" type="text" id="ivr-message-number" placeholder="Blank for current caller" value=view.model.verb_attributes.to}}
+        <span id="ivr-message-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

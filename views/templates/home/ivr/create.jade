@@ -24,6 +24,8 @@ script(type="text/x-handlebars", data-template-name="ivr/create")
                 <li class="list-group-item"><a href="#" {{action "select" "reject" bubbles=false}}>REJECT</a></li>
                 <li class="list-group-item"><a href="#" {{action "select" "message" bubbles=false}}>MESSAGE</a></li>
         div.col-md-10(id="ivr-content")
+          {{view view.controller.containerView}}
+
       div.row
         div.col-md-12
           <button type="button" id="btnCreateIvr" class="btn btn-default pull-right" {{action "cancelIvrAction"}}>Cancel</button>

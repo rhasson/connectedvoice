@@ -16,7 +16,8 @@ module.exports = {
 		helpers.isUserLoggedIn(request.state)
 		.then(function(id) {
 			console.log('Login: has cookie')
-			reply(JSON.stringify({status: 0, reason: 'User already signed in', user_id: id}));
+			reply(JSON.stringify({status: 0, reason: 'User already signed in', user_id: id}))
+				.state('va_cookie', {_id: id});
 		})
 		.catch(function() {
 			var params = request.payload

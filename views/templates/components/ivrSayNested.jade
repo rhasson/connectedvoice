@@ -1,12 +1,10 @@
-script(type="text/x-handlebars", data-template-name="components/ivr-say-nested")
+script(type="text/x-handlebars", data-template-name="ivr-say-nested")
   div.row(id="ivr-say-view")
     div.form-inline
       div.form-group
-        span#ivr-say-nested-remove.glyphicon.glyphicon-arrow-right.va-inline-space
+        <span id="ivr-say-nested-remove" class="glyphicon glyphicon-arrow-right va-inline-space" {{action "unNestIvrItemAction" view}}></span>
         label.form-control.va-action-label.va-inline-space SAY
-        input.form-control.va-inline-space(type="text", id="ivr-say-message", placeholder="Enter the text to speak")
+        {{input class="form-control va-ivr-text va-inline-space" type="text" placeholder="Enter the text to speak" value=view.model.nouns.text}}
         label.form-control.va-action-label.va-inline-space as a
-        select.form-control.va-inline-space(id="ivr-say-voice")
-          option Woman
-          option Man
-        span#ivr-say-remove.glyphicon.glyphicon-remove-circle.va-inline-space
+        {{view "select" content=view.model.params.voice_options value=view.model.verb_attributes.voice class="form-control va-inline-space"}}
+        <span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

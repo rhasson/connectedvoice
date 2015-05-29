@@ -22,13 +22,16 @@
 	margin-right: 5px !important;
 	margin-bottom: 5px !important;
 }
-#ivr-say-message, 
-#ivr-message-text {
+.va-ivr-text {
 	width: 500px !important;
 }
-#ivr-gather-numdigits,
-#ivr-gather-finishonkey,
-#ivr-gather-timeout {
+.va-ivr-tn {
+	width: 120px !important;
+}
+.va-ivr-sm-num {
+	width: 50px !important;
+}
+.va-ivr-md-num {
 	width: 100px !important;
 }
 .va-action-label {

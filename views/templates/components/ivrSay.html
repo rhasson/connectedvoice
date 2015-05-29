@@ -1,0 +1,4 @@
+<script type="text/x-handlebars" data-template-name="ivr-say"><div id="ivr-say-view" class="row"><div class="form-inline"><div class="form-group"><label class="form-control va-action-label va-inline-space">SAY</label><input class="form-control va-inline-space" type="text" id="ivr-say-message" placeholder="Enter the text to speak" value={{view.content.nouns.text}}></input><label class="form-control va-action-label va-inline-space">as a</label><select class="form-control va-inline-space" id="ivr-say-voice">
+<option selected={{view.isSelected 'Woman'}}>Woman</option>
+<option selected={{view.isSelected 'Man'}}>Man</option>
+</select><span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space"></span></div></div></div></script>

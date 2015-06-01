@@ -49,6 +49,8 @@ module.exports = {
 		})
 	}, 
 	registerHandler: function(request, reply) {
+		reply(JSON.stringify({status: 1, reason: 'Registration failed'}));
+		/*
 		helpers.registerNewUser(request.payload)
 		.then(function(doc) {
 			console.log('registerHandler: ', doc)
@@ -58,6 +60,7 @@ module.exports = {
 			console.log('Register failure: ', err);
 			reply(JSON.stringify({status: 1, reason: 'Registration failed'}));
 		});
+		*/
 	},
 	getAccountInformation: function(request, reply) {
 		helpers.isUserLoggedIn(request.state).then(function(id) {

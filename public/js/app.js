@@ -641,12 +641,16 @@ App.IvrCreateController = Ember.Controller.extend({
 				containerView.removeObject(view);
 			});
 
+			this.set('containerView', undefined);
+
 			this.transitionToRoute('numbers.index', model.get('id'));
 		},
 		removeIvrItemAction: function(view) {
 			var containerView = Ember.View.views['ivrcontainerview'];
 			this.store.deleteRecord(view.model);
 			containerView.removeObject(view);
+			this.set('containerView', containerView);
+			console.log(this.get('containerView'))
 		},
 		unNestIvrItemAction: function(view) {
 			var containerView = Ember.View.views['ivrcontainerview'];
@@ -674,33 +678,44 @@ App.IvrCreateController = Ember.Controller.extend({
 				}
 			}
 		},
-		select: function(name, model) {
+		select: function(name, model_in) {
 			var containerView = Ember.View.views['ivrcontainerview'];
 			var viewClass, id, parent;
+			var model = undefined;
 			switch(name) {
 				case 'say':
 					parent = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
 					id = Date.now();
 				
-					model = this.store.createRecord('ivrsay', model);
+					model = this.store.createRecord('ivrsay', model_in);
 					model.set('index', id);
+					//model.set('id', id);
 					viewClass = Ember.View.extend({
-						model: model,
-						textObserver: function() {}.observes('model.nouns.text'),
-						selectObserver: function() {}.observes('model.verb_attributes.voice')
+						//model: model,
+						//textObserver: function() {console.log(arguments)}.observes('model.nouns.text'),
+						//selectObserver: function() {}.observes('model.verb_attributes.voice')
 					});
+
 					if (parent) {
-						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-say-nested', classNames: ['row', 'ivr-say-view-nested'+id]});
+						viewClass = containerView.createChildView(viewClass, {
+							model: model,
+							templateName: 'ivr-say-nested',
+							classNames: ['row', 'ivr-say-view-nested'+id]
+						});
 						viewClass.parent_id = parent;  //include the parent id in the child view
 					} else {
-						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-say', classNames: ['row', 'ivr-say-view'+id]});
+						viewClass = containerView.createChildView(viewClass, {
+							model: model,
+							templateName: 'ivr-say',
+							classNames: ['row', 'ivr-say-view'+id]
+						});
 					}
 
 					containerView.pushObject(viewClass);
 					break;
 				case 'dial':
 					id = Date.now();
-					model = this.store.createRecord('ivrdial', model);
+					model = this.store.createRecord('ivrdial', model_in);
 					model.set('index', id);
 					viewClass = Ember.View.extend({
 						classNames: ['row', 'ivr-dial-view'+id],
@@ -715,7 +730,7 @@ App.IvrCreateController = Ember.Controller.extend({
 					break;
 				case 'hangup':
 					id = Date.now();
-					model = this.store.createRecord('ivrhangup', model);
+					model = this.store.createRecord('ivrhangup', model_in);
 					model.set('index', id);
 					viewClass = Ember.View.extend({
 						classNames: ['row', 'ivr-hangup-view'+id],
@@ -730,7 +745,7 @@ App.IvrCreateController = Ember.Controller.extend({
 					parent = this.canNest(name);
 					id = Date.now();
 
-					model = this.store.createRecord('ivrpause', model);
+					model = this.store.createRecord('ivrpause', model_in);
 					model.set('index', id);
 					viewClass = Ember.View.extend({
 						classNames: ['row'],
@@ -749,7 +764,7 @@ App.IvrCreateController = Ember.Controller.extend({
 					break;
 				case 'reject':
 					id = Date.now();
-					model = this.store.createRecord('ivrreject', model);
+					model = this.store.createRecord('ivrreject', model_in);
 					model.set('index', id);
 					viewClass = Ember.View.extend({
 						classNames: ['row', 'ivr-reject-view'+id],
@@ -763,7 +778,7 @@ App.IvrCreateController = Ember.Controller.extend({
 					break;
 				case 'message':
 					id = Date.now();
-					model = this.store.createRecord('ivrmessage', model);
+					model = this.store.createRecord('ivrmessage', model_in);
 					model.set('index', id);
 					viewClass = Ember.View.extend({
 						classNames: ['row', 'ivr-message-view'+id],
@@ -778,7 +793,7 @@ App.IvrCreateController = Ember.Controller.extend({
 					break;
 				case 'gather':
 					id = Date.now();
-					model = this.store.createRecord('ivrgather', model);
+					model = this.store.createRecord('ivrgather', model_in);
 					model.set('index', id);
 					viewClass = Ember.View.extend({
 						classNames: ['row', 'ivr-gather-view'+id],

@@ -48,89 +48,109 @@ App.Status = DS.Model.extend({
 App.Ivrsay = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'say',
-	nouns: {
-		text: null
-	},
-	verb_attributes: {
-		voice: 'Woman',
-		loop: 1,
-		language: 'en'
-	},
-	params: {
-		voice_options: ['Woman', 'Man']
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {
+			text: null
+		};
+		this.verb_attributes = {
+			voice: 'Woman',
+			loop: 1,
+			language: 'en'
+		};
+		this.params = {
+			voice_options: ['Woman', 'Man']
+		};
 	}
 });
 
 App.Ivrdial = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'dial',
-	nouns: {
-		text: null
-	},
-	verb_attributes: {
-		timeout: 30,
-		record: 'do-not-record',
-		hangupOnStar: false,
-		timeLimit: 14400,
-		callerId: null
-	},
-	params: {}
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {
+			text: null
+		};
+		this.verb_attributes = {
+			timeout: 30,
+			record: 'do-not-record',
+			hangupOnStar: false,
+			timeLimit: 14400,
+			callerId: null
+		};
+		this.params = {};
+	}
 });
 
 App.Ivrhangup = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'hangup',
-	nouns: {},
-	verb_attributes: {},
-	params: {}
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {};
+		this.verb_attributes = {};
+		this.params = {};
+	}
 });
 
 App.Ivrpause = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'pause',
-	nouns: {},
-	verb_attributes: {
-		len: 1
-	},
-	params: {}
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {};
+		this.verb_attributes = {
+			len: 1
+		};
+		params = {};
+	}
 });
 
 App.Ivrreject = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'reject',
-	nouns: {},
-	verb_attributes: {
-		reason: 'Rejected'
-	},
-	params: {
-		reason_options: ['Rejected', 'Busy']
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {};
+		this.verb_attributes = {
+			reason: 'Rejected'
+		};
+		this.params = {
+			reason_options: ['Rejected', 'Busy']
+		};
 	}
 });
 
 App.Ivrmessage = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'message',
-	nouns: {
-		body: null
-	},
-	verb_attributes: {
-		to: null
-	},
-	params: {}
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {
+			body: null
+		};
+		this.verb_attributes = {
+			to: null
+		};
+		this.params = {};
+	}
 });
 
 App.Ivrgather = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'gather',
-	children: [],
-	nouns: {},
-	verb_attributes: {
-		timeout: 5,
-		numDigits: 'unlimited',
-		finishOnKey: '#'
-	},
-	params: {
-		nesting_rules: ['say', 'play', 'pause']
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {};
+		this.verb_attributes = {
+			timeout: 5,
+			numDigits: 'unlimited',
+			finishOnKey: '#'
+		};
+		this.params = {
+			nesting_rules: ['say', 'play', 'pause']
+		};
 	}
 });
 
@@ -596,9 +616,9 @@ App.IvrRoute = Ember.Route.extend({
 App.IvrCreateController = Ember.Controller.extend({
 	needs: ['home', 'session', 'application'],
 	actions: {
-		createIvrAction: function() {
+		createIvr: function() {
 			var self = this;
-			var containerView = Ember.View.views['ivrcontainerview'];
+			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
 			var views = containerView.get('childViews');
 
 			var verbs = serializeIvr(views);
@@ -631,36 +651,36 @@ App.IvrCreateController = Ember.Controller.extend({
 				toggleMessageSlide();
 			});
 		},
-		cancelIvrAction: function(el) {
+		cancelIvr: function() {
 			var self = this;
 			var model = this.get('controllers.home').get('model');
-			var containerView = Ember.View.views['ivrcontainerview'];
+			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
 
-			containerView.toArray().forEach(function(view) {
-				self.store.deleteRecord(view.model);
-				containerView.removeObject(view);
+			containerView.toArray().forEach(function(comp) {
+				self.store.deleteRecord(comp.item);
+				containerView.removeObject(comp);
 			});
 
 			this.set('containerView', undefined);
 
 			this.transitionToRoute('numbers.index', model.get('id'));
 		},
-		removeIvrItemAction: function(view) {
-			var containerView = Ember.View.views['ivrcontainerview'];
-			this.store.deleteRecord(view.model);
-			containerView.removeObject(view);
+		removeIvrItem: function(comp) {
+			var containerView = this.get('containerView');
+			this.store.deleteRecord(comp.item);
+			containerView.removeObject(comp);
 			this.set('containerView', containerView);
 			console.log(this.get('containerView'))
 		},
-		unNestIvrItemAction: function(view) {
-			var containerView = Ember.View.views['ivrcontainerview'];
-			var current_id = view.model.get('index');
+		unNestIvrItem: function(comp) {
+			var containerView = this.get('containerView');
+			var current_id = comp.item.get('index');
 
 			var arr = containerView.toArray();
 
 			for (var i=0, id, temp, v; i < arr.length; i++) {
 				v = arr[i];
-				id = v.model.get('index');
+				id = v.item.get('index');
 				if (id === current_id) {
 					//take existing values and remove word nested from them
 					temp = v.get('templateName');
@@ -670,164 +690,86 @@ App.IvrCreateController = Ember.Controller.extend({
 						return x;
 					});
 					v.set('classNames', temp);
-					delete v.parent_id
+					v.parent_id = undefined;
 					v.rerender();
-					containerView.removeObject(view);
+					containerView.removeObject(comp);
 					containerView.pushObject(v);
 					break;
 				}
 			}
+			this.set('containerView', containerView);
 		},
 		select: function(name, model_in) {
-			var containerView = Ember.View.views['ivrcontainerview'];
+			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
 			var viewClass, id, parent;
 			var model = undefined;
-			switch(name) {
-				case 'say':
-					parent = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
-					id = Date.now();
-				
-					model = this.store.createRecord('ivrsay', model_in);
-					model.set('index', id);
-					//model.set('id', id);
-					viewClass = Ember.View.extend({
-						//model: model,
-						//textObserver: function() {console.log(arguments)}.observes('model.nouns.text'),
-						//selectObserver: function() {}.observes('model.verb_attributes.voice')
-					});
 
-					if (parent) {
-						viewClass = containerView.createChildView(viewClass, {
-							model: model,
-							templateName: 'ivr-say-nested',
-							classNames: ['row', 'ivr-say-view-nested'+id]
-						});
-						viewClass.parent_id = parent;  //include the parent id in the child view
-					} else {
-						viewClass = containerView.createChildView(viewClass, {
-							model: model,
-							templateName: 'ivr-say',
-							classNames: ['row', 'ivr-say-view'+id]
-						});
+			parent = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
+			id = Date.now().toString();
+		
+			model = this.store.createRecord('ivr'+name, model_in);
+			model.set('index', id);
+
+			containerView.get('content').pushObject(model);
+
+			compClass = Ember.Component.extend({
+				item: {},
+				index: id,
+				parent_id: parent,
+ 				layoutName: parent ? 'components/ivr-'+name+'-nested' : 'components/ivr-'+name,
+				classNames: ['row', 'ivr-'+name+'-view'+id],
+				didInsertElement: function() {
+					console.log('didInsertElement: ', this)
+				},
+				init: function() {
+					var model, id;
+
+					this._super.apply(this, arguments);
+
+					id = this.get('index');
+					model = this.get('parentView').get('content').findBy('index', id);
+
+					this.set('item', model);
+				},
+				actions: {
+					removeIvrItemAction: function() {
+						this.get('parentView').send('removeIvrItem', this);
+					},
+					unNestIvrItemAction: function() {
+						this.get('parentView').send('unNestIvrItem', this);
+					},
+					cancelIvrAction: function() {
+						this.get('parentView').send('cancelIvr');
+					},
+					createIvrAction: function() {
+						this.get('parentView').send('createIvr');
 					}
+				}
+			});
 
-					containerView.pushObject(viewClass);
-					break;
-				case 'dial':
-					id = Date.now();
-					model = this.store.createRecord('ivrdial', model_in);
-					model.set('index', id);
-					viewClass = Ember.View.extend({
-						classNames: ['row', 'ivr-dial-view'+id],
-						model: model,
-						templateName: 'ivr-dial',
-						textObserver: function() {}.observes('model.nouns.text'),
-						timeoutObserver: function() {}.observes('model.verb_attributes.timeout')
-					});
+			compClass = containerView.createChildView(compClass);
+			containerView.pushObject(compClass);
 
-					viewClass = containerView.createChildView(viewClass);
-					containerView.pushObject(viewClass);
-					break;
-				case 'hangup':
-					id = Date.now();
-					model = this.store.createRecord('ivrhangup', model_in);
-					model.set('index', id);
-					viewClass = Ember.View.extend({
-						classNames: ['row', 'ivr-hangup-view'+id],
-						model: model,
-						templateName: 'ivr-hangup'
-					});
-
-					viewClass = containerView.createChildView(viewClass);
-					containerView.pushObject(viewClass);
-					break;
-				case 'pause':
-					parent = this.canNest(name);
-					id = Date.now();
-
-					model = this.store.createRecord('ivrpause', model_in);
-					model.set('index', id);
-					viewClass = Ember.View.extend({
-						classNames: ['row'],
-						model: model,
-						lenObserver: function() {}.observes('model.verb_attributes.len')
-					});
-					
-					if (parent) {
-						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-pause-nested', classNames: ['row', 'ivr-pause-view-nested'+id]});
-						viewClass.parent_id = parent;  //include the parent id in the child view
-					} else {
-						viewClass = containerView.createChildView(viewClass, {templateName: 'ivr-pause', classNames: ['row', 'ivr-pause-view'+id]});
-					}
-
-					containerView.pushObject(viewClass);
-					break;
-				case 'reject':
-					id = Date.now();
-					model = this.store.createRecord('ivrreject', model_in);
-					model.set('index', id);
-					viewClass = Ember.View.extend({
-						classNames: ['row', 'ivr-reject-view'+id],
-						model: model,
-						templateName: 'ivr-reject',
-						lenObserver: function() {}.observes('model.verb_attributes.reason')
-					});
-
-					viewClass = containerView.createChildView(viewClass);
-					containerView.pushObject(viewClass);
-					break;
-				case 'message':
-					id = Date.now();
-					model = this.store.createRecord('ivrmessage', model_in);
-					model.set('index', id);
-					viewClass = Ember.View.extend({
-						classNames: ['row', 'ivr-message-view'+id],
-						model: model,
-						templateName: 'ivr-message',
-						bodyObserver: function() {}.observes('model.nouns.body'),
-						toObserver: function() {}.observes('model.verb_attributes.to')
-					});
-
-					viewClass = containerView.createChildView(viewClass);
-					containerView.pushObject(viewClass);
-					break;
-				case 'gather':
-					id = Date.now();
-					model = this.store.createRecord('ivrgather', model_in);
-					model.set('index', id);
-					viewClass = Ember.View.extend({
-						classNames: ['row', 'ivr-gather-view'+id],
-						model: model,
-						templateName: 'ivr-gather',
-						numDigitsObserver: function() {}.observes('model.verb_attributes.numDigits'),
-						timeoutObserver: function() {}.observes('model.verb_attributes.timeout'),
-						keyObserver: function() {}.observes('model.verb_attributes.finishOnKey')
-					});
-
-					viewClass = containerView.createChildView(viewClass);
-					containerView.pushObject(viewClass);
-					break;
-			}
+			this.set('containerView', containerView);
 		}
 	},
 	canNest: function(verbToNest) {
 		var nestable = ['gather'];
 		var allowedToNest = ['say', 'pause'];
-		var containerView = Ember.View.views['ivrcontainerview'];
-		var views = containerView.get('childViews');
+		var containerView = this.get('containerView');//Ember.View.views['ivrcontainerview'];
+		var views = containerView.toArray();  //containerView.get('content');
 		var view = undefined;
 
 		views.reverse();
 		for (var i=0; i < views.length; i++) {
-			if (!('parent_id' in views[i])
-				&& nestable.indexOf(views[i].model.get('verb')) > -1 
+			if (views[i].parent_id === undefined
+				&& nestable.indexOf(views[i].get('item').get('verb')) > -1 
 				&& allowedToNest.indexOf(verbToNest) > -1)
 			{
-				view = views[i].model.get('index');
+				view = views[i].get('item').get('index');
 				break;
 			}
 		}
-
 		return view;
 	}
 });
@@ -837,18 +779,46 @@ App.IvrCreateView = Ember.View.extend({
 	init: function() {
     	var actions, ivr, containerView;
     	var childViews;
-
+		
+		this._super();
+		
 		ivr = this.get('controller').get('model').get('ivr_id');
 	   	this.get('controller').set('verbs', ivr.get('actions'));
 		
+		containerView = Ember.ContainerView.extend({
+			elementId: 'ivrcontainerview',
+			classNames: ['col-md-12'],
+			content: [],
+			actions: {
+				removeIvrItem: function(comp) {
+					this.get('controller').send('removeIvrItem', comp)
+				},
+				unNestIvrItem: function(comp) {
+					this.get('controller').send('unNestIvrItem', comp);
+				},
+				cancelIvr: function() {
+					this.get('controller').send('cancelIvr');
+				},
+				createIvr: function() {
+					this.get('controller').send('createIvr');
+				}
+			}
+		});
+/*
 		containerView = Ember.ContainerView.create({
 			elementId: 'ivrcontainerview',
-			classNames: ['col-md-12']
+			classNames: ['col-md-12'],
+			content: [],
+			actions: {
+				removeIvrItem: function() {
+					console.log('view removing ', this)
+					//this.get('controller').sendAction('removeIvrItemAction', this);
+					//this.get('controller').send('removeIvrItem', this)  //TODO: fails because the context is that of the component and there is no controller
+				}
+			}
 		});
-
-		this.get('controller').set('containerView', containerView);
-
-		this._super();
+*/
+		this.get('controller').set('containerView', containerView.create());
 	},
 	didInsertElement: function() {
 		var controller = this.get('controller');
@@ -988,7 +958,7 @@ function serializeIvr(views) {
 
 	for (var i=views.length-1; i >= 0; i--) {
 		view = views[i];
-		model = view.get('model');
+		model = view.get('item');
 
 		if ('parent_id' in view) {
 			p_id = view.parent_id;

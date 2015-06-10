@@ -1,12 +1,12 @@
-script(type="text/x-handlebars", data-template-name="ivr-gather")
+script(type="text/x-handlebars", data-template-name="components/ivr-gather")
   div.row(id="ivr-gather-view")
     div.form-inline
       div.form-group
         label.form-control.va-action-label.va-inline-space GATHER
         label.form-control.va-action-label.va-inline-space How many digits
-        {{input class="form-control va-ivr-md-num va-inline-space" type="text" placeholder="Unlimited" value=view.model.verb_attributes.numDigits}}
+        {{input class="form-control va-ivr-md-num va-inline-space" type="text" placeholder="Unlimited" value=item.verb_attributes.numDigits}}
         label.form-control.va-action-label.va-inline-space or wait for timeout of
-        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="5 seconds" value=view.model.verb_attributes.timeout}}
+        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="5 seconds" value=item.verb_attributes.timeout}}
         label.form-control.va-action-label.va-inline-space or a press of
-        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="#" value=view.model.verb_attributes.finishOnKey}}
+        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="#" value=item.verb_attributes.finishOnKey}}
         <span id="ivr-gather-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

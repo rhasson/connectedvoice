@@ -1,9 +1,9 @@
-script(type="text/x-handlebars", data-template-name="ivr-dial")
+script(type="text/x-handlebars", data-template-name="components/ivr-dial")
   div.row(id="ivr-dial-view")
     div.form-inline
       div.form-group
         label.form-control.va-action-label.va-inline-space DIAL
-        {{input class="form-control va-ivr-tn va-inline-space" type="text" placeholder="Phone number" value=view.model.nouns.text}}
+        {{input class="form-control va-ivr-tn va-inline-space" type="text" placeholder="Phone number" value=item.nouns.text}}
         label.form-control.va-action-label.va-inline-space after how many seconds
-        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="Timeout" value=view.model.verb_attributes.timeout}}
+        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="Timeout" value=item.verb_attributes.timeout}}
         <span id="ivr-dial-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

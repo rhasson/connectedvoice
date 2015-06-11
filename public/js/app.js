@@ -616,7 +616,7 @@ App.IvrRoute = Ember.Route.extend({
 App.IvrCreateController = Ember.Controller.extend({
 	needs: ['home', 'session', 'application'],
 	actions: {
-		createIvr: function() {
+		createIvrAction: function() {
 			var self = this;
 			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
 			var views = containerView.get('childViews');
@@ -633,14 +633,18 @@ App.IvrCreateController = Ember.Controller.extend({
 				var model;
 				console.log('Saving IVR: ', resp);
 				if ('status' in resp && resp.status === 1) throw (resp);
-				
-				containerView.toArray().forEach(function(view) {
-					self.store.deleteRecord(view.model);
-					containerView.removeObject(view);
+
+				//After model was saved successfully clear up IVR creation variables and redirect to numbers.index
+				this.send('cancelIvrAction');
+/*				
+				containerView.toArray().forEach(function(comp) {
+					self.store.deleteRecord(comp.item);
+					containerView.removeObject(comp);
 				});
 
 				model = self.get('controllers.home').get('model');
 				self.transitionToRoute('numbers.index', model.get('id'));
+*/
 			}).catch(function(err) {
 				console.log('Saving IVR Error: ', err);
 				var msg;
@@ -651,7 +655,7 @@ App.IvrCreateController = Ember.Controller.extend({
 				toggleMessageSlide();
 			});
 		},
-		cancelIvr: function() {
+		cancelIvrAction: function() {
 			var self = this;
 			var model = this.get('controllers.home').get('model');
 			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
@@ -737,12 +741,6 @@ App.IvrCreateController = Ember.Controller.extend({
 					},
 					unNestIvrItemAction: function() {
 						this.get('parentView').send('unNestIvrItem', this);
-					},
-					cancelIvrAction: function() {
-						this.get('parentView').send('cancelIvr');
-					},
-					createIvrAction: function() {
-						this.get('parentView').send('createIvr');
 					}
 				}
 			});
@@ -780,7 +778,7 @@ App.IvrCreateView = Ember.View.extend({
     	var actions, ivr, containerView;
     	var childViews;
 		
-		this._super();
+		this._super.apply(this, arguments);
 		
 		ivr = this.get('controller').get('model').get('ivr_id');
 	   	this.get('controller').set('verbs', ivr.get('actions'));
@@ -795,29 +793,10 @@ App.IvrCreateView = Ember.View.extend({
 				},
 				unNestIvrItem: function(comp) {
 					this.get('controller').send('unNestIvrItem', comp);
-				},
-				cancelIvr: function() {
-					this.get('controller').send('cancelIvr');
-				},
-				createIvr: function() {
-					this.get('controller').send('createIvr');
 				}
 			}
 		});
-/*
-		containerView = Ember.ContainerView.create({
-			elementId: 'ivrcontainerview',
-			classNames: ['col-md-12'],
-			content: [],
-			actions: {
-				removeIvrItem: function() {
-					console.log('view removing ', this)
-					//this.get('controller').sendAction('removeIvrItemAction', this);
-					//this.get('controller').send('removeIvrItem', this)  //TODO: fails because the context is that of the component and there is no controller
-				}
-			}
-		});
-*/
+
 		this.get('controller').set('containerView', containerView.create());
 	},
 	didInsertElement: function() {
@@ -825,9 +804,27 @@ App.IvrCreateView = Ember.View.extend({
 		var actions = controller.get('verbs');
 
 		if (actions.length) {
+
+			for (var i=0,action; i < actions.length; i++) {
+				action = actions[i];
+				controller.send('select', action.verb, action);
+				if ('nested' in action && action.nested) {
+					for (var j=0, child; j < action.nested.length; j++) {
+						child = action.nested[j];
+						controller.send('select', child.verb, child);
+					}
+				}
+			}
+/*
 			actions.forEach(function(action) {
 				controller.send('select', action.verb, action);
+				if ('nested' in action && action.nested) {
+					action.nested.forEach(function(child){
+						controller.send('select', child.verb, child);
+					});
+				}
 			});
+*/
 		}
 	}
 });

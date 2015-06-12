@@ -629,22 +629,9 @@ App.IvrCreateController = Ember.Controller.extend({
 			ivr.set('account_id', this.get('controllers.home').get('model'));
 			ivr.set('actions', verbs);
 			ivr.set('date_updated', new Date());
-			ivr.save().then(function(resp) {
-				var model;
-				console.log('Saving IVR: ', resp);
-				if ('status' in resp && resp.status === 1) throw (resp);
-
+			ivr.save().then(function() {			
 				//After model was saved successfully clear up IVR creation variables and redirect to numbers.index
-				this.send('cancelIvrAction');
-/*				
-				containerView.toArray().forEach(function(comp) {
-					self.store.deleteRecord(comp.item);
-					containerView.removeObject(comp);
-				});
-
-				model = self.get('controllers.home').get('model');
-				self.transitionToRoute('numbers.index', model.get('id'));
-*/
+				self.send('cancelIvrAction');
 			}).catch(function(err) {
 				console.log('Saving IVR Error: ', err);
 				var msg;
@@ -722,9 +709,6 @@ App.IvrCreateController = Ember.Controller.extend({
 				parent_id: parent,
  				layoutName: parent ? 'components/ivr-'+name+'-nested' : 'components/ivr-'+name,
 				classNames: ['row', 'ivr-'+name+'-view'+id],
-				didInsertElement: function() {
-					console.log('didInsertElement: ', this)
-				},
 				init: function() {
 					var model, id;
 
@@ -815,16 +799,6 @@ App.IvrCreateView = Ember.View.extend({
 					}
 				}
 			}
-/*
-			actions.forEach(function(action) {
-				controller.send('select', action.verb, action);
-				if ('nested' in action && action.nested) {
-					action.nested.forEach(function(child){
-						controller.send('select', child.verb, child);
-					});
-				}
-			});
-*/
 		}
 	}
 });

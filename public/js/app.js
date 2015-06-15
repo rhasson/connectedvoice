@@ -994,39 +994,32 @@ function serializeIvr(views) {
 				temp = model.get('verb_attributes').get('transcribe') === 'Yes' ? true : false;
 				model.get('verb_attributes').set('transcribe', temp);
 			}
-			addToArray(actions, model);
+			addToArray(actions, model, {action_for: view.action_for});
 			continue;
 		}
 
 		if ('parent_id' in view) {
 			p_id = view.parent_id;
-			nested.unshift({
-				verb: model.get('verb'),
-				nouns: getOwnData(model.get('nouns')),
-				verb_attributes: getOwnData(model.get('verb_attributes')),
-				actions: actions
-			});
+			addToArray(nested, model, {parent_id: view.parent_id, actions: actions});
 			actions = [];
 			a_id = undefined;
 		} else if (p_id && p_id === model.get('index')) {
-			verbs.unshift({
-				verb: model.get('verb'),
-				nouns: getOwnData(model.get('nouns')),
-				verb_attributes: getOwnData(model.get('verb_attributes')),
-				nested: nested
-			});
+			addToArray(verbs, model, {nested: nested});
 			nested = [];
 			p_id = undefined;
 		} else {
 			addToArray(verbs, model);
 		}
 
-		function addToArray(arr, m) {
-			arr.unshift({
+		function addToArray(arr, m, mixin) {
+			var obj = {
+				index: m.get('index'),
 				verb: m.get('verb'),
 				nouns: getOwnData(m.get('nouns')),
 				verb_attributes: getOwnData(m.get('verb_attributes'))
-			});	
+			}
+			if (mixin) Ember.mixin(obj, mixin);
+			arr.unshift(getOwnData(obj));
 		}
 	}
 
@@ -1035,7 +1028,7 @@ function serializeIvr(views) {
 		if (!Object.keys(obj).length) return undefined;
 
 		for (var i in obj) {
-			if (obj.hasOwnProperty(i)) temp[i] = obj[i];
+			if (obj.hasOwnProperty(i) && typeof obj[i] !== 'function') temp[i] = obj[i];
 		}
 
 		return temp;

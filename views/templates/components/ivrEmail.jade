@@ -1,0 +1,9 @@
+script(type="text/x-handlebars", data-template-name="components/ivr-email")
+  div.row(id="ivr-email-view")
+    div.form-inline
+      div.form-group
+        label.form-control.va-action-label.va-inline-space E-MAIL
+        {{input class="form-control va-ivr-md va-inline-space" type="text" placeholder="E-mail address" value=item.nouns.email}}
+        label.form-control.va-action-label.va-inline-space and say
+        {{input class="form-control va-ivr-text va-inline-space" type="text" placeholder="Optional message" value=item.nouns.message}}
+        <span id="ivr-message-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

@@ -154,6 +154,60 @@ App.Ivrgather = DS.Model.extend({
 	}
 });
 
+App.Ivrforward = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'forward',
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {
+			text: null
+		};
+		this.verb_attributes = {};
+		this.params = {};
+	}
+});
+
+App.Ivremail = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'email',
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {
+			text: null,
+			message: null
+		};
+		this.verb_attributes = {};
+		this.params = {};
+	}
+});
+
+App.Ivrrecord = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'record',
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {};
+		this.verb_attributes = {
+			maxLength: 60, //in minutes.  must be converted to seconds when serializing
+			transcribe: 'No' //convert to true/false
+		};
+		this.params = {
+			transcribe_options: ['Yes', 'No']
+		};
+	}
+});
+
+App.Ivrwebtask = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'webtask',
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {};
+		this.verb_attributes = {};
+		this.params = {};
+	}
+});
+
 /*********************************************************************/
 
 /* Application router definition */
@@ -405,15 +459,6 @@ App.HomeRoute = Ember.Route.extend({
 				else this.transitionTo('numbers.index', model);
 			} else this.transitionTo('account.create', model.id);
 		}
-/*
-		if ('twilio' in model) {
-			if (!('associated_numbers' in model.twilio)) this.transitionTo('numbers.create', model._id);
-			if ('associated_numbers' in model.twilio) {
-				if (model.twilio.associated_numbers === null) this.transitionTo('numbers.create', model._id);
-				else this.transitionTo('numbers.index', model._id);
-			}
-		}
-*/
 	}
 });
 
@@ -621,7 +666,7 @@ App.IvrCreateController = Ember.Controller.extend({
 			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
 			var views = containerView.get('childViews');
 
-			var verbs = serializeIvr(views);
+ 			var verbs = serializeIvr(views);
 
 			var ivr = this.store.createRecord('ivr');
 
@@ -692,12 +737,15 @@ App.IvrCreateController = Ember.Controller.extend({
 		},
 		select: function(name, model_in) {
 			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
-			var viewClass, id, parent;
+			var viewClass, id, parent_id, action_for;
 			var model = undefined;
 
-			parent = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
+			parent_id = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
+			action_for = this.getActionFor(name); //if this is an action in response to a verb, return the index id of the verb it's in response to
 			id = Date.now().toString();
-		
+
+			console.log('getActionFor: ', name)
+
 			model = this.store.createRecord('ivr'+name, model_in);
 			model.set('index', id);
 
@@ -706,8 +754,9 @@ App.IvrCreateController = Ember.Controller.extend({
 			compClass = Ember.Component.extend({
 				item: {},
 				index: id,
-				parent_id: parent,
- 				layoutName: parent ? 'components/ivr-'+name+'-nested' : 'components/ivr-'+name,
+				parent_id: parent_id,
+				action_for: action_for,
+ 				layoutName: parent_id ? 'components/ivr-'+name+'-nested' : 'components/ivr-'+name,
 				classNames: ['row', 'ivr-'+name+'-view'+id],
 				init: function() {
 					var model, id;
@@ -753,6 +802,15 @@ App.IvrCreateController = Ember.Controller.extend({
 			}
 		}
 		return view;
+	},
+	getActionFor: function(verb) {
+		var actions = ['forward', 'record', 'message', 'email', 'webtask'];
+		var containerView = this.get('containerView');
+		var views = containerView.toArray();
+
+		if (actions.indexOf(verb) > -1 && views.length) {
+			return views[views.length-1].get('item').get('index');
+		} else return undefined;
 	}
 });
 
@@ -785,19 +843,16 @@ App.IvrCreateView = Ember.View.extend({
 	},
 	didInsertElement: function() {
 		var controller = this.get('controller');
-		var actions = controller.get('verbs');
+		var verbs = controller.get('verbs');
 
-		if (actions.length) {
+		if (verbs.length) parse(verbs);
 
-			for (var i=0,action; i < actions.length; i++) {
-				action = actions[i];
-				controller.send('select', action.verb, action);
-				if ('nested' in action && action.nested) {
-					for (var j=0, child; j < action.nested.length; j++) {
-						child = action.nested[j];
-						controller.send('select', child.verb, child);
-					}
-				}
+		function parse(arr) {
+			for (var i=0, item; i < arr.length; i++) {
+				item = arr[i];
+				controller.send('select', item.verb, item);
+				if ('nested' in item && item.nested) { parse(item.nested); }
+				else if ('actions' in item && item.actions) { parse(item.actions); }
 			}
 		}
 	}
@@ -924,12 +979,24 @@ function toggleMessageSlide() {
 
 function serializeIvr(views) {
 	var verbs = [];
-	var nested = [];
-	var model, view, p_id = undefined;
+	var nested = [], actions = [];
+	var model, view, p_id = undefined, a_id = undefined, temp = undefined;
 
 	for (var i=views.length-1; i >= 0; i--) {
 		view = views[i];
 		model = view.get('item');
+
+		if ('action_for' in view) {
+			a_id = view.action_for;
+			if (model.get('verb') === 'record') {
+				temp = model.get('verb_attributes').get('maxLength') * 60;
+				model.get('verb_attributes').set('maxLength', temp);
+				temp = model.get('verb_attributes').get('transcribe') === 'Yes' ? true : false;
+				model.get('verb_attributes').set('transcribe', temp);
+			}
+			addToArray(actions, model);
+			continue;
+		}
 
 		if ('parent_id' in view) {
 			p_id = view.parent_id;
@@ -937,7 +1004,10 @@ function serializeIvr(views) {
 				verb: model.get('verb'),
 				nouns: getOwnData(model.get('nouns')),
 				verb_attributes: getOwnData(model.get('verb_attributes')),
+				actions: actions
 			});
+			actions = [];
+			a_id = undefined;
 		} else if (p_id && p_id === model.get('index')) {
 			verbs.unshift({
 				verb: model.get('verb'),
@@ -948,11 +1018,15 @@ function serializeIvr(views) {
 			nested = [];
 			p_id = undefined;
 		} else {
-			verbs.unshift({
-				verb: model.get('verb'),
-				nouns: getOwnData(model.get('nouns')),
-				verb_attributes: getOwnData(model.get('verb_attributes'))
-			});
+			addToArray(verbs, model);
+		}
+
+		function addToArray(arr, m) {
+			arr.unshift({
+				verb: m.get('verb'),
+				nouns: getOwnData(m.get('nouns')),
+				verb_attributes: getOwnData(m.get('verb_attributes'))
+			});	
 		}
 	}
 

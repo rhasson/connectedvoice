@@ -1,0 +1,11 @@
+script(type="text/x-handlebars", data-template-name="components/ivr-record")
+  div.row(id="ivr-record-view")
+    div.form-inline
+      div.form-group
+        label.form-control.va-action-label.va-inline-space RECORD 
+        label.form-control.va-action-label.va-inline-space incoming message.
+        label.form-control.va-action-label.va-inline-space Max duration in minutes
+        {{input class="form-control va-ivr-sm va-inline-space" type="text" placeholder="60" value=item.verb_attributes.maxLength}}
+        label.form-control.va-action-label.va-inline-space and transcribe to text
+        {{view "select" content=item.params.transcribe_options value=item.verb_attributes.transcribe class="form-control va-inline-space"}}
+        <span id="ivr-message-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

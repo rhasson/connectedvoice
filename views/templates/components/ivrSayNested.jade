@@ -7,4 +7,6 @@ script(type="text/x-handlebars", data-template-name="components/ivr-say-nested")
         {{input class="form-control va-ivr-text va-inline-space" type="text" placeholder="Enter the text to speak" value=item.nouns.text}}
         label.form-control.va-action-label.va-inline-space as a
         {{view "select" content=item.params.voice_options value=item.verb_attributes.voice class="form-control va-inline-space"}}
+        label.form-control.va-action-label.va-inline-space expecting
+        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" value=item.nouns.expected_digit}}
         <span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

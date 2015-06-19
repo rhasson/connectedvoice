@@ -51,7 +51,8 @@ App.Ivrsay = DS.Model.extend({
 	init: function() {
 		this._super.apply(this, arguments);
 		this.nouns = {
-			text: null
+			text: null,
+			expected_digit: null
 		};
 		this.verb_attributes = {
 			voice: 'Woman',
@@ -743,8 +744,6 @@ App.IvrCreateController = Ember.Controller.extend({
 			parent_id = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
 			action_for = this.getActionFor(name); //if this is an action in response to a verb, return the index id of the verb it's in response to
 			id = Date.now().toString();
-
-			console.log('getActionFor: ', name)
 
 			model = this.store.createRecord('ivr'+name, model_in);
 			model.set('index', id);

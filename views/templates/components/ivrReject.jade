@@ -2,6 +2,9 @@ script(type="text/x-handlebars", data-template-name="components/ivr-reject")
   div.row(id="ivr-reject-view")
     div.form-inline
       div.form-group
+        {{#if isAction}}
+        <span id="ivr-reject-remove" class="glyphicon glyphicon-transfer va-inline-space"></span>
+        {{/if}}
         label.form-control.va-action-label.va-inline-space REJECT
         label.form-control.va-action-label.va-inline-space And play back the following tone
         {{view "select" content=item.params.reason_options value=item.verb_attributes.reason class="form-control va-inline-space"}}

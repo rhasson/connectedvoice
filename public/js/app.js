@@ -755,7 +755,13 @@ App.IvrCreateController = Ember.Controller.extend({
 				index: id,
 				parent_id: parent_id,
 				action_for: action_for,
- 				layoutName: parent_id ? 'components/ivr-'+name+'-nested' : 'components/ivr-'+name,
+				isNested: function() {
+					return !!this.parent_id;
+				}.property('parent_id'),
+				isAction: function() {
+					return !!this.action_for;
+				}.property('action_for'),
+ 				layoutName: 'components/ivr-'+name, //parent_id ? 'components/ivr-'+name+'-nested' : 'components/ivr-'+name,
 				classNames: ['row', 'ivr-'+name+'-view'+id],
 				init: function() {
 					var model, id;
@@ -803,7 +809,7 @@ App.IvrCreateController = Ember.Controller.extend({
 		return view;
 	},
 	getActionFor: function(verb) {
-		var actions = ['forward', 'record', 'message', 'email', 'webtask'];
+		var actions = ['dial', 'record', 'message', 'email', 'webtask'];
 		var containerView = this.get('containerView');
 		var views = containerView.toArray();
 

@@ -2,8 +2,11 @@ script(type="text/x-handlebars", data-template-name="components/ivr-message")
   div.row(id="ivr-message-view")
     div.form-inline
       div.form-group
+        {{#if isAction}}
+        <span id="ivr-message-remove" class="glyphicon glyphicon-transfer va-inline-space"></span>
+        {{/if}}
         label.form-control.va-action-label.va-inline-space MESSAGE
         {{input class="form-control va-ivr-text va-inline-space" type="text" placeholder="Text" value=item.nouns.body}}
         label.form-control.va-action-label.va-inline-space to
-        {{input class="form-control va-ivr-tn va-inline-space" type="text" placeholder="Sender" value=item.verb_attributes.to}}
+        {{input class="form-control va-ivr-tn va-inline-space" type="text" placeholder="Recipient" value=item.verb_attributes.to}}
         <span id="ivr-message-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

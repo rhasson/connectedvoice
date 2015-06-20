@@ -1,8 +1,0 @@
-script(type="text/x-handlebars", data-template-name="components/ivr-forward")
-  div.row(id="ivr-forward-view")
-    div.form-inline
-      div.form-group
-        label.form-control.va-action-label.va-inline-space FORWARD
-        label.form-control.va-action-label.va-inline-space Incoming call or text to
-        {{input class="form-control va-ivr-tn va-inline-space" type="text" placeholder="Phone number" value=item.nouns.text}}
-        <span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

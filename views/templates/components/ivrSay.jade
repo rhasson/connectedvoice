@@ -2,8 +2,15 @@ script(type="text/x-handlebars", data-template-name="components/ivr-say")
   div.row(id="ivr-say-view")
     div.form-inline
       div.form-group
+        {{#if isNested}}
+        <span id="ivr-say-nested-remove" class="glyphicon glyphicon-arrow-right va-inline-space"></span>
+        {{/if}}
         label.form-control.va-action-label.va-inline-space SAY
         {{input class="form-control va-ivr-text va-inline-space" type="text" placeholder="Enter the text to speak" value=item.nouns.text}}
         label.form-control.va-action-label.va-inline-space as a
         {{view "select" content=item.params.voice_options value=item.verb_attributes.voice class="form-control va-inline-space"}}
+        {{#if isNested}}
+        label.form-control.va-action-label.va-inline-space expecting
+        {{input class="form-control va-ivr-sm-num va-inline-space" type="text" value=item.nouns.expected_digit}}
+        {{/if}}
         <span id="ivr-say-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

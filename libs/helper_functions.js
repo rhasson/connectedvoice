@@ -117,6 +117,7 @@ module.exports = helpers = {
 				buf = sha.digest('base64')
 				params.password = buf;
 				params.salt = salt.toString('base64');
+				params.type = 'user';
 
 				return dbinsert(params);
 			}
@@ -283,6 +284,7 @@ module.exports = helpers = {
 
 			//TODO: add missing params to IVR actions
 			params.actions = helpers.setupActionVerbs(params.actions, userid);
+			params.type = 'ivr';
 
 			return dbinsert(params).then(function(doc) {
 				ivr_doc = doc.shift();

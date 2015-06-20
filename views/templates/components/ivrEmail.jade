@@ -2,6 +2,9 @@ script(type="text/x-handlebars", data-template-name="components/ivr-email")
   div.row(id="ivr-email-view")
     div.form-inline
       div.form-group
+        {{#if isAction}}
+        <span id="ivr-email-remove" class="glyphicon glyphicon-transfer va-inline-space"></span>
+        {{/if}}
         label.form-control.va-action-label.va-inline-space E-MAIL
         {{input class="form-control va-ivr-md va-inline-space" type="text" placeholder="E-mail address" value=item.nouns.email}}
         label.form-control.va-action-label.va-inline-space and say

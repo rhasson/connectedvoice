@@ -2,6 +2,9 @@ script(type="text/x-handlebars", data-template-name="components/ivr-record")
   div.row(id="ivr-record-view")
     div.form-inline
       div.form-group
+        {{#if isAction}}
+        <span id="ivr-record-remove" class="glyphicon glyphicon-transfer va-inline-space"></span>
+        {{/if}}
         label.form-control.va-action-label.va-inline-space RECORD 
         label.form-control.va-action-label.va-inline-space incoming message.
         label.form-control.va-action-label.va-inline-space Max duration in minutes

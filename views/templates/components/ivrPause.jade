@@ -2,6 +2,9 @@ script(type="text/x-handlebars", data-template-name="components/ivr-pause")
   div.row(id="ivr-pause-view")
     div.form-inline
       div.form-group
+        {{#if isNested}}
+        <span id="ivr-pause-remove" class="glyphicon glyphicon-arrow-right va-inline-space"></span>
+        {{/if}}
         label.form-control.va-action-label.va-inline-space PAUSE
         {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="Duration in seconds" value=item.verb_attributes.len}}
         <span id="ivr-pause-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

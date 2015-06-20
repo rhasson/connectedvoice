@@ -282,8 +282,6 @@ module.exports = helpers = {
 		//update the associated_numbers array inside the account to include an ivr_id with the new _id
 		if ('account_id' in params && params.account_id === userid && 'number_id' in params) {
 
-			//TODO: add missing params to IVR actions
-			params.actions = helpers.setupActionVerbs(params.actions, userid);
 			params.type = 'ivr';
 
 			return dbinsert(params).then(function(doc) {
@@ -329,50 +327,6 @@ module.exports = helpers = {
 	},
 	deleteIvrRecord: function(params) {
 
-	},
-	setupActionVerbs: function(actions, user_id) {
-		var arr = [];
-		var length, count=0, t;
-		var seperator = '...';
-		var limit = 1600;
-		var userid = new Buffer(user_id, 'utf8').toString('base64');
-
-		actions.forEach(function(item) {
-			switch (item.verb) {
-				case 'gather':
-					item.verb_attributes.method = 'POST';
-					item.verb_attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
-					arr.push(item);
-					break;
-				case 'dial':
-					item.verb_attributes.method = 'POST';
-					item.verb_attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
-					arr.push(item);
-					break;
-				case 'message':
-					item.verb_attributes.method = 'POST';
-					item.verb_attributes.action = config.callbacks.ActionUrl.replace('%userid', userid);
-					item.verb_attributes.statusCallback = config.callbacks.StatusCallback.replace('%userid', userid);
-					arr.push(item);
-										
-					//breaks up message body larger than 1600 characters into multiple messages
-/*					length = item.nouns.body.length;
-					while (count < length) {
-						if (count > 0) count -= 2;
-						t = _.trunc(item.nouns.body.slice(count), {separator:/\s|\?|!/g, length: limit});
-						count += t.length;
-						item.nouns.body = t;
-						arr.push(item)
-					}
-					count = 0;
-*/
-					break;
-				default: 
-					arr.push(item);
-					break;
-			}
-		});
-		return arr;
 	},
 	combinePromiseResponses: function(tns, results) {
 		Object.keys(tns).map(function(tn, i) {

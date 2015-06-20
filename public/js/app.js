@@ -155,19 +155,6 @@ App.Ivrgather = DS.Model.extend({
 	}
 });
 
-App.Ivrforward = DS.Model.extend({
-	index: DS.attr('number'),
-	verb: 'forward',
-	init: function() {
-		this._super.apply(this, arguments);
-		this.nouns = {
-			text: null
-		};
-		this.verb_attributes = {};
-		this.params = {};
-	}
-});
-
 App.Ivremail = DS.Model.extend({
 	index: DS.attr('number'),
 	verb: 'email',

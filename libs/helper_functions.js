@@ -350,6 +350,7 @@ module.exports = helpers = {
 				id: item._id,
 				account_id: item.account_id,
 				number_id: item.number_id,
+				ivr_name: item.ivr_name,
 				actions: item.actions,
 				date_updated: item.date_updated
 			}

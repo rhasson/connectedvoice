@@ -1,0 +1,23 @@
+script(type="text/x-handlebars", data-template-name="components/phone-numbers")
+  div.row
+    div.col-md-9
+      table.table.table-hover
+        thead
+          th Phone Number
+          th Capabilities
+          th IVR Name
+          th Actions
+        <tbody>
+        {{#each model.content as |number|}}
+        <tr>
+        <th scope="row"> {{#link-to "ivr.create" number.id}}{{number.friendly_name}}{{/link-to}}</th>
+        <td>
+        <span {{bind-attr class=":glyphicon number.capabilities.voice:glyphicon-earphone:hidden"}} alt="Voice"></span>
+        <span {{bind-attr class=":glyphicon number.capabilities.sms:glyphicon-comment:hidden"}} alt="SMS"></span>
+        <span {{bind-attr class=":glyphicon number.capabilities.mms:glyphicon-picture:hidden"}} alt="MMS"></span>
+        </td>
+        <td>{{number.ivr_name}}</td>
+        <td><span class="glyphicon glyphicon-remove-circle" {{action "removeNumberAction" number.id}}></span></td>
+        </tr>
+        {{/each}}
+        </tbody>

@@ -37,3 +37,11 @@
 .va-action-label {
 	background-color: #dff0d8 !important;
 }
+.tabbar {
+	position: relative;
+	padding: 45px 15px 15px;
+	margin: 0 -15px 15px;
+}
+.add-num-box {
+	padding: 0px 15px 15px 15px;
+}

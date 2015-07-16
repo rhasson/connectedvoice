@@ -1,0 +1,6 @@
+script(type="text/x-handlebars", data-template-name="configuration")
+  div.row
+    div.col-md-9
+      div.col-md-3.add-num-box
+        {{#link-to "numbers.create" account}}<button type="button" class="btn btn-primary">Add New Number</button>{{/link-to}}
+  {{phone-numbers model=model action="takeAction"}}

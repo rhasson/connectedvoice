@@ -12,19 +12,9 @@ script(type="text/x-handlebars", data-template-name="components/add-phone-number
       label.checkbox-inline
         <input type="checkbox" id="tollfree_checkbox"> Toll-Free
   <button type="button" id="btnlistPhoneNumbers" class="btn btn-primary" {{action "getAvailableNumbersAction"}}>Find Numbers</button>
+  {{#link-to "configuration"}}<button type="button" class="btn btn-default">Cancel</button>{{/link-to}}
   <button type="button" id="btnBuyPhoneNumbers" class="btn btn-success hidden" {{action "buyPhoneNumbersAction"}}>Get Now</button>
   {{#if phoneList}}
   div#phone_list.container
-    div.row
-      div.col-md-6
-        ul
-          {{#each phone in phoneList}}
-          <li id="{{tn-to-class phone.phone_number}}">
-          <p class="text-primary" {{action "selectedTn" phone}}> {{phone.friendly_name}}
-          <span {{bind-attr class=":glyphicon phone.capabilities.voice:glyphicon-earphone:hidden"}} alt="Voice"></span>
-          <span {{bind-attr class=":glyphicon phone.capabilities.SMS:glyphicon-comment:hidden"}} alt="SMS"></span>
-          <span {{bind-attr class=":glyphicon phone.capabilities.MMS:glyphicon-picture:hidden"}} alt="MMS"></span>
-          </p>
-          </li>
-          {{/each}}
+  {{available-numbers numbers=phoneList}}
   {{/if}}

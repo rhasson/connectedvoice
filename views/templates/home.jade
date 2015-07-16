@@ -2,10 +2,12 @@ script(type="text/x-handlebars", data-template-name="home")
   div.container.content_home
     div.row
       div.col-md-12
-        <h1>Welcome {{model.first_name}} {{model.last_name}}</h1>
-        {{#if isAccountCreated}}
-        <p class="help-block">Account has been {{model.twilio.status}} since {{format-date model.twilio.date_updated}}</p>
-        {{/if}}
+        div.tabbar
+          ul.nav.nav-pills
+            <li role="presentation">{{#link-to "dashboard"}}<a>Dashboard</a>{{/link-to}}</li>
+            <li class={{isAnalyticsActive}} role="prsentation"> <a {{action "switchComponent" "analytics"}}>Call Analytics</a></li>
+            <li class={{isCampaignsActive}} role="prsentation"> <a {{action "switchComponent" "campaigns"}}>Campaigns</a></li>
+            <li role="presentation">{{#link-to "configuration"}}<a>Configuration</a>{{/link-to}}</li>
     div.row
       div.col-md-12
         {{outlet}}

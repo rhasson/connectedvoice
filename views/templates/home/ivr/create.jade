@@ -8,7 +8,8 @@ script(type="text/x-handlebars", data-template-name="ivr/create")
         p Next continue adding actions to fit your needs.  When finished, click the Finish button.
   div.col-md-12
     div.well.well-lg
-      p#helper-message Lets define what your customer will experience when calling {{model.friendly_name}}
+      p#helper-message Start defining what your customer will experience when calling {{model.friendly_name}}
+      p#helper-message Give your IVR a friendly name so we can refer to it later {{input class="va-ivr-tn va-inline-space" type="text" value=ivr_name}}
       div.row
         div.col-md-2
           div.panel.panel-info

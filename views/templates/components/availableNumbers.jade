@@ -1,0 +1,17 @@
+script(type="text/x-handlebars", data-template-name="components/available-numbers")
+  div.row
+    div.col-md-9
+      table.table.table-hover
+        <tbody>
+        {{#each numbers as |number|}}
+        <tr>
+        <th scope="row">{{number.friendly_name}}</th>
+        <td>
+        <span {{bind-attr class=":glyphicon number.capabilities.voice:glyphicon-earphone:hidden"}} alt="Voice"></span>
+        <span {{bind-attr class=":glyphicon number.capabilities.SMS:glyphicon-comment:hidden"}} alt="SMS"></span>
+        <span {{bind-attr class=":glyphicon number.capabilities.MMS:glyphicon-picture:hidden"}} alt="MMS"></span>
+        </td>
+        <td><a {{action "buyNumberAction" number.id}}>Buy</a></td>
+        </tr>
+        {{/each}}
+        </tbody>

@@ -36,6 +36,7 @@ App.Number = DS.Model.extend({
 App.Ivr = DS.Model.extend({
 	number_id: DS.belongsTo('number'),
 	account_id: DS.belongsTo('account'),
+	ivr_name: DS.attr('string'),
 	date_updated: DS.attr('date'),
 	actions: DS.attr()
 });
@@ -218,6 +219,10 @@ App.Router.map(function() {
 			this.route('create');
 			this.route('remove', {path: '/ivr/:account_id/:ivr_id'});
 		});
+		this.resource('dashboard');
+		this.resource('analytics');
+		this.resource('campaigns');
+		this.resource('configuration');
 	});
 });
 
@@ -281,6 +286,24 @@ App.SessionController = Ember.Controller.extend({
 /*********************************************************************/
 
 /* Application default behavior definition */
+
+App.ApplicationRoute = Ember.Route.extend({
+	actions: {
+		/* Generic method for executing actions on behalf of nested components
+		** action: the method name on the controller to call
+		** params: a hash of parameters to pass to the method
+		*/
+		takeAction: function(action, params) {
+			this.send(action, params);
+		},
+		removeNumber: function(id) {
+			this.store.find('number', params.id).then(function(item) {
+				item.deleteRecord();
+				item.save();
+			});
+		}
+	}
+})
 
 //Application default controller
 //primarily used for handling login and logout
@@ -419,13 +442,6 @@ App.HomeRoute = Ember.Route.extend({
 			return undefined;
 		});
 
-/*		return Ember.$.getJSON('/user').then(function(data) {
-			if ('status' in data && data.status === 1) {
-				self.transitionTo('index');
-				return {};
-			} else return data;
- 		});
-*/
 	},
 	afterModel: function() {
 		var session = this.controllerFor('session');
@@ -443,8 +459,8 @@ App.HomeRoute = Ember.Route.extend({
 
 			if (twilio && twilio.id) {
 				controller.set('isAccountCreated', true);
-				if (model.get('numbers').get('length') === 0) this.transitionTo('numbers.create', model);
-				else this.transitionTo('numbers.index', model);
+				if (model.get('numbers').get('length') === 0) this.transitionTo('configuration');
+				else this.transitionTo('dashboard');
 			} else this.transitionTo('account.create', model.id);
 		}
 	}
@@ -452,16 +468,92 @@ App.HomeRoute = Ember.Route.extend({
 
 // Home controller
 //Used to handle many actions fired by individual components on the page
-App.HomeController = Ember.Controller.extend({
+App.HomeController = Ember.Controller.extend(Ember.Evented, {
 	needs: ['application', 'session'],
-	isAccountCreated: false
+	isAccountCreated: false,
+	comp_name: 'dashboard',
+	getCompType: Ember.computed('comp_name', function() {
+		return this.get('comp_name');
+	}),
+	actions: {
+		switchComponent: function(name) {
+			if (typeof name === 'object') name = name.name;
+			this.set('comp_name', name);
+		}
+	}
 });
 /*********************************************************************/
 
+/*  NOTE:
+* The HOME template contains a dynamic component helper {{component getCompType model=model action="takeAction"}}
+* The 'action' parameter is used to call into the parent controller
+* Each individual component inside the HOME template will have it's own actions to handle UI.  If they need to call into the controller they
+* will need to use this.sendAction('action', param1, param2...).  Where 'action' is a keyward that references the 'takeAction'
+* method on the controller.
+*/
+
+/********************** DASHBOARD **********************************/
+
+App.DashboardRoute = Ember.Route.extend({
+	needs: ['session'],
+	model: function() {
+		var id = this.controllerFor('session').getSession();
+		return this.store.find('account', id);
+	}
+});
+
+/*********************************************************************/
+
+/********************** CONFIGURATIONS **********************************/
+
+App.ConfigurationRoute = Ember.Route.extend({
+	needs: ['session'],
+ 	model: function() {
+ 		/* combine the ivr_name from the ivr model array with the corresponding number from the numbers array
+ 		*  use that as the base model for this route
+ 		*/
+	    var nums = this.store.all('number') || [];
+	        ivrs = this.store.all('ivr') || [];
+	    var stream = nums.map(function(item) {
+	    	var x = ivrs.findBy('id', item.get('ivr_id').get('id'));
+	    	item.set('ivr_name', x.get('ivr_name'));
+	    	return item;
+	    });
+
+	    return Em.ArrayProxy.createWithMixins(Ember.SortableMixin, {
+	        content: stream,
+	        sortProperties: this.sortProperties,
+	        sortAscending: this.sortAscending
+	    }); 		
+ 	},
+ 	setupController: function(controller, model) {
+		var id = this.controllerFor('session').getSession();
+		controller.set('account', this.store.find('account', id));
+ 		controller.set('model', model);
+ 	}
+});
+
+App.PhoneNumbersComponent = Ember.Component.extend({
+	numbers: Ember.computed('model.numbers', function() {
+		return this.get('model').get('numbers');
+	}),
+	actions: {
+		removeNumberAction: function(id) {
+			this.sendAction('action', 'removeNumber', {id: id});
+		},
+		switchToAddNumComp: function() {
+			this.sendAction('action', 'switchComponent', {name: 'add-phone-number'});
+		}
+	}
+});
+
+/*********************************************************************/
 /********************** ACCOUNT **********************************/
 App.AccountRoute = Ember.Route.extend({
+	needs: ['session'],
 	model: function() {
-		return this.controllerFor('home').get('model');
+		var id = this.controllerFor('session').getSession();
+		return this.store.find('account', id);
 	},
 	afterModel: function() {
 		if (!this.model()) {
@@ -514,8 +606,6 @@ App.CreateAccountComponent = Ember.Component.extend({
 /********************** NUMBERS **********************************/
 App.NumbersRoute = Ember.Route.extend({
 	model: function(params) {
-		//return this.store.all('account');
-		//return this.controllerFor('home').get('model');
 		return this.store.getById('account', params.account_id)
 	},
 	setupController: function(controller, model) {
@@ -549,11 +639,6 @@ App.NumbersCreateController = Ember.Controller.extend({
 		//list available phone numbers method fired by AddPhoneNumbers component
 		getAvailableNumbers: function(params) {
 			var self = this;
-
-/*			this.store.find('number', params).then(function(n) {
-				console.log('FOUND: ', n)
-			})
-*/
 			$.get('/api/v0/number', params, function(resp, status, xhr) {
 				console.log(resp, status)
 				if (resp) {
@@ -625,14 +710,6 @@ App.AddPhoneNumberComponent = Ember.Component.extend({
 	}
 });
 
-App.MyPhoneNumbersComponent = Ember.Component.extend({
-	actions: {
-		removeNumberAction: function(id) {
-			console.log('removing: ', id)
-			this.sendAction('removeNumberAction', id);
-		}
-	}
-});
 /*********************************************************************/
 
 /********************** IVRS **********************************/
@@ -648,6 +725,7 @@ App.IvrRoute = Ember.Route.extend({
 
 App.IvrCreateController = Ember.Controller.extend({
 	needs: ['home', 'session', 'application'],
+	ivr_name: 'Default',
 	actions: {
 		createIvrAction: function() {
 			var self = this;
@@ -660,6 +738,7 @@ App.IvrCreateController = Ember.Controller.extend({
 
 			ivr.set('number_id', this.model);
 			ivr.set('account_id', this.get('controllers.home').get('model'));
+			ivr.set('ivr_name', this.get('ivr_name'));
 			ivr.set('actions', verbs);
 			ivr.set('date_updated', new Date());
 			ivr.save().then(function() {			
@@ -687,7 +766,7 @@ App.IvrCreateController = Ember.Controller.extend({
 
 			this.set('containerView', undefined);
 
-			this.transitionToRoute('numbers.index', model.get('id'));
+			this.transitionToRoute('configuration');
 		},
 		removeIvrItem: function(comp) {
 			var containerView = this.get('containerView');
@@ -830,7 +909,7 @@ App.IvrCreateView = Ember.View.extend({
 				}
 			}
 		});
-
+		this.get('controller').set('ivr_name', ivr.get('ivr_name'));
 		this.get('controller').set('containerView', containerView.create());
 	},
 	didInsertElement: function() {

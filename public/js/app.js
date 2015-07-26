@@ -34,14 +34,13 @@ App.Number = DS.Model.extend({
 });
 
 App.Ivr = DS.Model.extend({
-	//number_id: DS.belongsTo('number'),
 	account_id: DS.belongsTo('account'),
 	ivr_name: DS.attr('string'),
 	date_updated: DS.attr('date'),
 	actions: DS.attr()
 });
 
-App.Status = DS.Model.extend({
+App.Error = DS.Model.extend({
 	status: DS.attr('number'),
 	reason: DS.attr('text')
 });
@@ -303,20 +302,50 @@ App.ApplicationRoute = Ember.Route.extend({
 		removeNumber: function(params) {
 			this.store.find('number', params.number_id).then(function(item) {
 				item.deleteRecord();
-				item.save();
+				item.save().then(function(resp) {
+					self.refresh();
+				})
+				.catch(function(err) {
+					console.log('err: ', err)
+					self.get('controller').set('notify_message', 'Failed to remove number to server.  Please try again later');
+					toggleMessageSlide();
+				});
 			});
 		},
 		//params: number_id, ivr_name
 		saveIvrToNumber: function(params) {
+			var self = this;
 			var ivr = this.store.all('ivr').filterBy('ivr_name', params.ivr_name);
+			var number = this.store.all('number').filterBy('id', params.number_id).pop();
 			var ivr_id = ivr.length ? ivr.pop().get('id') : "";
+
+			if (number.get('ivr_id') === ivr_id) return;
+
+			number.set('ivr_id', ivr_id);
+			number.save().then(function(resp) {
+					self.refresh();
+				})
+				.catch(function(err) {
+					console.log('err: ', err)
+					self.get('controller').set('notify_message', 'Failed to save changes to server.  Please try again later');
+					toggleMessageSlide();
+				});
+/*
 			this.store.find('number', params.number_id).then(function(item) {
 				item.set('ivr_id', ivr_id);
-				item.save();
+				item.save().then(function(resp) {
+					self.refresh();
+				})
+				.catch(function(err) {
+					console.log('err: ', err)
+					self.get('controller').set('notify_message', 'Failed to save changes to server.  Please try again later');
+					toggleMessageSlide();
+				});
 			});
+*/
 		}
 	}
-})
+});
 
 //Application default controller
 //primarily used for handling login and logout
@@ -337,7 +366,7 @@ App.ApplicationController = Ember.Controller.extend({
 			this.set('notify_message', msg);
 			toggleMessageSlide();
 		}
-	},
+	}
 });
 
 //Login & logout component definition
@@ -567,15 +596,14 @@ App.PhoneNumbersComponent = Ember.Component.extend({
 			console.log('Select Changed: ', prev, ' to ', value)
 			var el = '#' + obj.get('elementId');
 			if (prev === value) {
-				$(el).parent().next().children('span.glyphicon-ok-circle').removeClass('green');
+				$(el).parent().next().children('span.glyphicon-ok-circle').removeClass('green').addClass('gray');
 			} else {
-				$(el).parent().next().children('span.glyphicon-ok-circle').addClass('green');
+				$(el).parent().next().children('span.glyphicon-ok-circle').addClass('green').removeClass('gray');
 			}
 		},
 		saveIvrChangeAction: function(number_id, ivr_name, obj) {
 			//save the current ivr to the number
 			this.sendAction('action', 'saveIvrToNumber', {number_id: number_id, ivr_name: ivr_name});
-			//TODO reset the green check mark
 		}
 	}
 });
@@ -655,7 +683,14 @@ App.NumbersIndexController = Ember.Controller.extend({
 
 			this.store.find('number', id).then(function(item) {
 				item.deleteRecord();
-				item.save();
+				item.save().then(function(resp) {
+					resp.refresh();
+				})
+				.catch(function(err) {
+					console.log('err: ', err)
+					self.get('controller.application').set('notify_message', 'Failed to save changes to server.  Please try again');
+					toggleMessageSlide();
+				});
 			});
 		}
 	},
@@ -801,12 +836,9 @@ App.CreateIvrRoute = Ember.Route.extend({
 			ivr.save().then(function() {			
 				//After model was saved successfully clear up IVR creation variables and redirect to ivr.index
 				self.send('cancelIvrAction');
-			}).catch(function(err) {
-				console.log('Saving IVR Error: ', err);
-				var msg;
-				if ('status' in err && err.status === 1) msg = err.reason;
-				else msg = "Failed to make request.  Please try again later. - "+ err;
-
+			})
+			.catch(function(err) {
+				console.log('err: ', err)
 				self.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
 				toggleMessageSlide();
 			});

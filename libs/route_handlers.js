@@ -30,7 +30,14 @@ module.exports = {
 				})
 				.catch(function(err) {
 					console.log('Auth bad: ', err)
-					reply(JSON.stringify({status: 1, reason: 'Invalid email or password'}));
+					reply(JSON.stringify({
+						errors: {
+							email: [ {
+								message: 'Invalid email or password',
+								attribute: 'email'
+							} ]
+						}
+					})).code(422);
 				});
 
 
@@ -49,7 +56,14 @@ module.exports = {
 		})
 	}, 
 	registerHandler: function(request, reply) {
-		reply(JSON.stringify({status: 1, reason: 'Registration failed'}));
+		reply(JSON.stringify({
+			errors: {
+				first_name: [ {
+					message: 'Registration failed',
+					attribute: 'first_name'
+				} ]
+			}
+		})).code(422);
 		/*
 		helpers.registerNewUser(request.payload)
 		.then(function(doc) {
@@ -76,7 +90,14 @@ module.exports = {
 //			reply(JSON.stringify(mock.user_account_with_number));
 		})
 		.catch(function(err) {
-			reply(JSON.stringify({status: 1, reason: err.toString()}));
+			reply(JSON.stringify({
+				errors: {
+					account_id: [ {
+						message: err.toString(),
+						attribute: 'account_id'
+					} ]
+				}
+			})).code(422);
 		});		
 	},
 	createTwilioAccount: function(request, reply) {
@@ -96,7 +117,14 @@ module.exports = {
 		})
 		.catch(function(err) {
 			console.log('Account error: ', err)
-			reply(JSON.stringify({status: 1, reason: err.toString()}));
+			reply(JSON.stringify({
+				errors: {
+					account: [ {
+						message: err.toString(),
+						attribute: 'account'
+					} ]
+				}
+			})).code(422);
 		});
 	},
 	updateTwilioAccount: function(request, reply) {
@@ -113,7 +141,14 @@ module.exports = {
 		})
 		.catch(function(err) {
 			console.log('getPhoneNumberList error: ', err);
-			reply(JSON.stringify({status: 1, reason: err.toString()}));
+			reply(JSON.stringify({
+				errors: {
+					phone_list: [ {
+						message: err.toString(),
+						attribute: 'phone_list'
+					} ]
+				}
+			})).code(422);
 		});
 	}, 
 	getPhoneNumberById: function(request, reply) {
@@ -150,7 +185,14 @@ module.exports = {
 		})
 		.catch(function(err) {
 			console.log('updatePhoneNumber error: ', err);
-			reply(JSON.stringify({status: 1, reason: err.toString()}));
+			reply(JSON.stringify({
+				errors: {
+					ivr_name: [ { 
+						message: err.toString(), 
+						attribute: 'ivr_name'
+					} ]
+				}
+			})).code(422);
 		});
 	},
 	buyPhoneNumber: function(request, reply) {
@@ -187,7 +229,14 @@ module.exports = {
 			if ('status' in err) {
 				msg = "Cannot complete your request at this time: "+err.code;
 			} else msg = err.toString();
-			reply(JSON.stringify({status: 1, reason: msg}));
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: 'id'
+					} ]
+				}
+			})).code(422);
 		});
 	}, 
 	removePhoneNumber: function(request, reply) {
@@ -224,7 +273,14 @@ module.exports = {
 			if ('status' in err) {
 				msg = "Cannot complete your request at this time: "+err.code;
 			} else msg = err.toString();
-			reply(JSON.stringify({status: 1, reason: msg}));
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: id
+					} ]
+				}
+			})).code(422);
 		});
 	},
 	getIvr: function(request, reply) {
@@ -247,7 +303,14 @@ module.exports = {
 			if ('status' in err) {
 				msg = "Cannot complete your request at this time: "+err.code;
 			} else msg = err.toString();
-			reply(JSON.stringify({status: 1, reason: msg}));
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: id
+					} ]
+				}
+			})).code(422);
 		});
 	},
 	updateIvr: function(request, reply) {
@@ -267,7 +330,14 @@ module.exports = {
 			if ('status' in err) {
 				msg = "Cannot complete your request at this time: "+err.code;
 			} else msg = err.toString();
-			reply(JSON.stringify({status: 1, reason: msg}));
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: id
+					} ]
+				}
+			})).code(422);
 		});
 	},
 	deleteIvr: function(request, reply) {
@@ -286,7 +356,14 @@ module.exports = {
 			if ('status' in err) {
 				msg = "Cannot complete your request at this time: "+err.code;
 			} else msg = err.toString();
-			reply(JSON.stringify({status: 1, reason: msg}));
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: id
+					} ]
+				}
+			})).code(422);
 		});
 	}
 }

@@ -277,7 +277,7 @@ module.exports = {
 			return helpers.deleteIvrRecord(request.params.id, _id);
 		})
 		.then(function(doc) {
-			reply();
+			reply(doc);
 		})
 		.catch(function(err) {
 			var msg;

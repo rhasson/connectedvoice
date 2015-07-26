@@ -785,8 +785,6 @@ App.CreateIvrRoute = Ember.Route.extend({
 
  			var verbs = serializeIvr(views);
 
- 			console.log('STARTING IVR: ', controller.get('model').toJSON(), verbs);
-
  			if (controller.get('model').get('id') === undefined) {
  				ivr = this.store.createRecord('ivr');
  			} else {
@@ -866,6 +864,9 @@ App.CreateIvrRoute = Ember.Route.extend({
 
 			parent_id = this.canNest(containerView, name);  //if nestable, returns the index id of the parent view to nest under
 			action_for = this.getActionFor(containerView, name); //if this is an action in response to a verb, return the index id of the verb it's in response to
+			if (action_for && action_for.parent_id) parent_id = action_for.parent_id;
+			if (action_for && action_for.action_id) action_for = action_for.action_id;
+
 			id = Date.now().toString();
 
 			model = this.store.createRecord('ivr'+name, model_in);
@@ -877,7 +878,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 				item: {},
 				index: id,
 				parent_id: parent_id,
-				action_for: !!parent_id ? action_for : undefined,
+				action_for: action_for,
 				isNested: function() {
 					return !!this.parent_id;
 				}.property('parent_id'),
@@ -915,29 +916,33 @@ App.CreateIvrRoute = Ember.Route.extend({
 	canNest: function(container, verbToNest) {
 		var nestable = ['gather'];
 		var allowedToNest = ['say', 'pause'];
+		var actions = ['dial', 'record', 'message', 'email', 'webtask'];
 		var containerView = container; //this.get('controller').get('model._containerView');//Ember.View.views['ivrcontainerview'];
 		var views = containerView.toArray();  //containerView.get('content');
-		var view = undefined;
+		var parent = undefined;
 
 		views.reverse();
 		for (var i=0; i < views.length; i++) {
-			if (views[i].parent_id === undefined
-				&& nestable.indexOf(views[i].get('item').get('verb')) > -1 
-				&& allowedToNest.indexOf(verbToNest) > -1)
+			if (views[i].parent_id === undefined  //is it already nested
+				&& nestable.indexOf(views[i].get('item').get('verb')) > -1   //is it a Gather
+				&& allowedToNest.indexOf(verbToNest) > -1)  //is it a verb that's allowed to nest
 			{
-				view = views[i].get('item').get('index');
+				parent = views[i].get('item').get('index');
 				break;
 			}
 		}
-		return view;
+		return parent;
 	},
 	getActionFor: function(container, verb) {
 		var actions = ['dial', 'record', 'message', 'email', 'webtask'];
 		var containerView = container; //this.get('model._containerView');
 		var views = containerView.toArray();
+		var view;
 
 		if (actions.indexOf(verb) > -1 && views.length) {
-			return views[views.length-1].get('item').get('index');
+			view = views[views.length-1];
+			return {action_id: view.get('item').get('index'),
+					parent_id: view.get('parent_id') || undefined};
 		} else return undefined;
 	}
 });

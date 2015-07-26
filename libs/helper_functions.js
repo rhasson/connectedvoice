@@ -307,39 +307,13 @@ module.exports = helpers = {
 
 			return dbinsert(params).then(function(doc) {
 				ivr_doc = doc.shift();
-				return helpers.getUserAccountInformation(userid, false);
-			})
-			.then(function(doc) {
-				var numbers = [];
-				var temp;
-				account = doc;
 
-				if ('associated_numbers' in account.twilio && account.twilio.associated_numbers) {
-					account.twilio.associated_numbers.forEach(function(item) {
-						if (item.sid === params.number_id) item.ivr_id = ivr_doc.id;
-						numbers.push(item);
-					});
-				}
-				temp = {twilio: {associated_numbers: numbers}};
-				return helpers.updateAccount(account._id, temp);
-			})
-			.then(function(doc) {
-				var ivr_ids;
+				return dbget(ivr_doc.id).then(function(d) {
+					var body = d.shift();
+					var record = helpers.formatIvrRecord([body]);
 
-				record = helpers.formatUserRecord(doc);
-				//ivr_ids = _.pluck(record.number, 'ivr_id');
-				return helpers.getIvrRecord(params.account_id).then(function(results) {
-					record.ivr = results;
-					return when.resolve(record);
+					return when.resolve({ivr: record});
 				});
-/*				return dbfetch({keys:ivr_ids}).then(function(ivrs) {
-					var body = ivrs.shift();
-					var results = _.pluck(body.rows, 'doc');
-
-					record.ivr = helpers.formatIvrRecord(results);
-					return when.resolve(record);
-				});
-*/
 			});
 		} else return when.reject(new Error('Did not provide account or number IDs with request'));
 	},
@@ -372,7 +346,7 @@ module.exports = helpers = {
 			var body = doc.shift();
 			return dbremove(body._id, body._rev).then(function(doc) {
 				var body = doc.shift();
-				if (body.ok === true) return when.resolve();
+				if (body.ok === true) return when.resolve({});
 				else when.reject(new Error('Failed to delete IVR record'));
 			})			
 		})

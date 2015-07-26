@@ -1,11 +1,24 @@
 script(type="text/x-handlebars", data-template-name="ivr/index")
-  div.col-md-8
-    p The following IVRs have been created.  You may create as many as you like.
-    p Only after you've associated the IVR with a particular phone will it be activated.
-  div.col-md-8
-    <button type="button" id="btnCreateIvr" class="btn btn-primary" {{action "createIvrAction"}}>Start Here</button>
-  div.col-md-8
-    ul
-      {{#each item in model.ivrs}}
-      li item.name
-      {{/each}}
+  div.row
+    div.col-md-9
+      p The following IVRs have been created.  You may create as many as you like.
+      p Only after you've associated the IVR with a particular phone number will it be activated.
+  div.row
+    div.col-md-9
+      {{#link-to "createIvr.new" 0}}<button type="button" class="btn btn-primary">Create IVR</button>{{/link-to}}
+  div.row
+    div.col-md-9
+      table.table.table-hover
+        thead
+          th Name
+          th Last Updated
+          th Actions
+        <tbody>
+        {{#each model as |ivr|}}
+        <tr>
+        <th scope="row"> {{#link-to "createIvr.edit" ivr.account_id ivr.id}}{{ivr.ivr_name}}{{/link-to}}</th>
+        <td><span>{{format-date ivr.date_updated}}</span></td>
+        <td><span class="glyphicon glyphicon-remove-circle red" {{action "removeIvrAction" ivr}}></span></td>
+        </tr>
+        {{/each}}
+        </tbody>

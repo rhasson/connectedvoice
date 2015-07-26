@@ -30,11 +30,11 @@ App.Number = DS.Model.extend({
 	friendly_name: DS.attr('string'),
 	phone_number: DS.attr('string'),
 	capabilities: DS.attr(),
-	ivr_id: DS.belongsTo('ivr')
+	ivr_id: DS.attr()
 });
 
 App.Ivr = DS.Model.extend({
-	number_id: DS.belongsTo('number'),
+	//number_id: DS.belongsTo('number'),
 	account_id: DS.belongsTo('account'),
 	ivr_name: DS.attr('string'),
 	date_updated: DS.attr('date'),
@@ -214,10 +214,13 @@ App.Router.map(function() {
 			this.route('edit', {path: '/numbers/:account_id/:number_id'});
 			this.route('remove', {path: '/numbers/:account_id/:number_id'});
 		});
-		this.resource('ivr', {path: '/ivr/:account_id'}, function() {
-			this.route('index', {path: '/'});
-			this.route('create');
-			this.route('remove', {path: '/ivr/:account_id/:ivr_id'});
+		this.resource('ivr', {path: '/ivr/:account_id'},function() {
+			this.route('index');
+			this.resource('createIvr', {path: '/:ivr_id'}, function() {
+				this.route('new');
+				this.route('edit');
+			});
+			this.route('remove', {path: '/:account_id/:ivr_id'});
 		});
 		this.resource('dashboard');
 		this.resource('analytics');
@@ -296,9 +299,19 @@ App.ApplicationRoute = Ember.Route.extend({
 		takeAction: function(action, params) {
 			this.send(action, params);
 		},
-		removeNumber: function(id) {
-			this.store.find('number', params.id).then(function(item) {
+		//params: number_id
+		removeNumber: function(params) {
+			this.store.find('number', params.number_id).then(function(item) {
 				item.deleteRecord();
+				item.save();
+			});
+		},
+		//params: number_id, ivr_name
+		saveIvrToNumber: function(params) {
+			var ivr = this.store.all('ivr').filterBy('ivr_name', params.ivr_name);
+			var ivr_id = ivr.length ? ivr.pop().get('id') : "";
+			this.store.find('number', params.number_id).then(function(item) {
+				item.set('ivr_id', ivr_id);
 				item.save();
 			});
 		}
@@ -426,13 +439,11 @@ App.HomeRoute = Ember.Route.extend({
 		if (!session.isSessionPresent()) this.transitionTo('/');
 	},
 	model: function() {
-		console.log('CALLING HOME MODEL')
 		var self = this;
 		var session = this.controllerFor('session');
 		var id = session.getSession();
 
 		return this.store.fetchById('account', id).then(function(data) {
-			console.log('data: ', data)
 			if ('status' in data && data.status === 1) throw new Error('Not logged in');
 			else return data;
 		}).catch(function(err) {
@@ -515,16 +526,22 @@ App.ConfigurationRoute = Ember.Route.extend({
 	    var nums = this.store.all('number') || [];
 	        ivrs = this.store.all('ivr') || [];
 	    var stream = nums.map(function(item) {
-	    	var x = ivrs.findBy('id', item.get('ivr_id').get('id'));
-	    	item.set('ivr_name', x.get('ivr_name'));
+	    	var x;
+	    	var id = item.get('ivr_id');
+	    	if (id) {
+	    		x = ivrs.findBy('id', id);
+	    		item.set('ivr_name', x.get('ivr_name'));
+	    	}
 	    	return item;
 	    });
 
 	    return Em.ArrayProxy.createWithMixins(Ember.SortableMixin, {
 	        content: stream,
 	        sortProperties: this.sortProperties,
-	        sortAscending: this.sortAscending
-	    }); 		
+	        sortAscending: this.sortAscending,
+	        names: ivrs.map(function(item) { return item.get('ivr_name'); }),
+	        needSave: false
+	    });
  	},
  	setupController: function(controller, model) {
 		var id = this.controllerFor('session').getSession();
@@ -534,15 +551,31 @@ App.ConfigurationRoute = Ember.Route.extend({
 });
 
 App.PhoneNumbersComponent = Ember.Component.extend({
-	numbers: Ember.computed('model.numbers', function() {
-		return this.get('model').get('numbers');
-	}),
 	actions: {
 		removeNumberAction: function(id) {
-			this.sendAction('action', 'removeNumber', {id: id});
+			this.sendAction('action', 'removeNumber', {number_id: id});
 		},
 		switchToAddNumComp: function() {
 			this.sendAction('action', 'switchComponent', {name: 'add-phone-number'});
+		},
+		/* triggers when select item is changed in custom select box
+		* prev: original value
+		* value: actual value being selected
+		* obj: class object
+		*/
+		selectChangeAction: function(prev, value, obj) {
+			console.log('Select Changed: ', prev, ' to ', value)
+			var el = '#' + obj.get('elementId');
+			if (prev === value) {
+				$(el).parent().next().children('span.glyphicon-ok-circle').removeClass('green');
+			} else {
+				$(el).parent().next().children('span.glyphicon-ok-circle').addClass('green');
+			}
+		},
+		saveIvrChangeAction: function(number_id, ivr_name, obj) {
+			//save the current ivr to the number
+			this.sendAction('action', 'saveIvrToNumber', {number_id: number_id, ivr_name: ivr_name});
+			//TODO reset the green check mark
 		}
 	}
 });
@@ -713,36 +746,62 @@ App.AddPhoneNumberComponent = Ember.Component.extend({
 /*********************************************************************/
 
 /********************** IVRS **********************************/
-App.IvrRoute = Ember.Route.extend({
+App.IvrIndexRoute = Ember.Route.extend({
 	model: function(params) {
-		//return this.store.all('account');
-		return this.store.find('number', params.account_id);
+		return this.store.all('ivr');
 	},
-	setupController: function(controller, model) {
-		controller.set('model', model);
+	actions: {
+		removeIvrAction: function(ivr) {
+			ivr.destroyRecord();
+		}
 	}
 });
 
-App.IvrCreateController = Ember.Controller.extend({
+//App.CreateIvrController = Ember.Controller.extend({
+App.CreateIvrRoute = Ember.Route.extend({
 	needs: ['home', 'session', 'application'],
-	ivr_name: 'Default',
+	beforeModel: function(transition) {
+		this.set('_account', this.store.find('account', transition.params.ivr.account_id));
+	},
+	model: function(params) {
+		if (Ember.keys(params).length === 0 || params.ivr_id === '0') return Ember.Object.create();
+		return this.store.find('ivr', params.ivr_id);
+	},
+	setupController: function(controller, model) {
+		if (Ember.keys(model).length === 0) model.set('ivr_name', 'Default');
+		model.set('_containerView', undefined);
+		model.set('_verbs', undefined);
+		model.set('_account', this.get('_account'));
+
+		controller.set('model', model);
+	},
 	actions: {
 		createIvrAction: function() {
 			var self = this;
-			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
+			var controller = this.get('controller');
+			var containerView = controller.get('model._containerView'); //Ember.View.views['ivrcontainerview'];
 			var views = containerView.get('childViews');
+			var ivr;
 
  			var verbs = serializeIvr(views);
 
-			var ivr = this.store.createRecord('ivr');
+ 			console.log('STARTING IVR: ', controller.get('model').toJSON(), verbs);
 
-			ivr.set('number_id', this.model);
-			ivr.set('account_id', this.get('controllers.home').get('model'));
-			ivr.set('ivr_name', this.get('ivr_name'));
+ 			if (controller.get('model').get('id') === undefined) {
+ 				ivr = this.store.createRecord('ivr');
+ 			} else {
+ 				ivr = controller.get('model');
+ 			}
+
+			ivr.set('account_id', controller.get('model._account'));
+			ivr.set('ivr_name', controller.get('model.ivr_name'));
 			ivr.set('actions', verbs);
 			ivr.set('date_updated', new Date());
+			
+			console.log('FINAL IVR: ', ivr.toJSON());
+
 			ivr.save().then(function() {			
-				//After model was saved successfully clear up IVR creation variables and redirect to numbers.index
+				//After model was saved successfully clear up IVR creation variables and redirect to ivr.index
 				self.send('cancelIvrAction');
 			}).catch(function(err) {
 				console.log('Saving IVR Error: ', err);
@@ -750,33 +809,31 @@ App.IvrCreateController = Ember.Controller.extend({
 				if ('status' in err && err.status === 1) msg = err.reason;
 				else msg = "Failed to make request.  Please try again later. - "+ err;
 
-				self.get("controllers.application").set('notify_message', 'Failed to save IVR.  ('+msg+')');
+				self.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
 				toggleMessageSlide();
 			});
 		},
 		cancelIvrAction: function() {
 			var self = this;
-			var model = this.get('controllers.home').get('model');
-			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
+			var containerView = this.get('controller').get('model._containerView');
 
 			containerView.toArray().forEach(function(comp) {
 				self.store.deleteRecord(comp.item);
 				containerView.removeObject(comp);
 			});
 
-			this.set('containerView', undefined);
+			this.get('controller').set('model._containerView', undefined);
 
-			this.transitionToRoute('configuration');
+			this.transitionTo('ivr.index');
 		},
 		removeIvrItem: function(comp) {
-			var containerView = this.get('containerView');
+			var containerView = this.get('controller').get('model._containerView');
 			this.store.deleteRecord(comp.item);
 			containerView.removeObject(comp);
-			this.set('containerView', containerView);
-			console.log(this.get('containerView'))
+			this.get('controller').set('model._containerView', containerView);
 		},
 		unNestIvrItem: function(comp) {
-			var containerView = this.get('containerView');
+			var containerView = this.get('controller').get('model._containerView');
 			var current_id = comp.item.get('index');
 
 			var arr = containerView.toArray();
@@ -800,15 +857,15 @@ App.IvrCreateController = Ember.Controller.extend({
 					break;
 				}
 			}
-			this.set('containerView', containerView);
+			this.set('model._containerView', containerView);
 		},
 		select: function(name, model_in) {
-			var containerView = this.get('containerView'); //Ember.View.views['ivrcontainerview'];
+			var containerView = this.get('controller').get('model._containerView'); //Ember.View.views['ivrcontainerview'];
 			var viewClass, id, parent_id, action_for;
 			var model = undefined;
 
-			parent_id = this.canNest(name);  //if nestable, returns the index id of the parent view to nest under
-			action_for = this.getActionFor(name); //if this is an action in response to a verb, return the index id of the verb it's in response to
+			parent_id = this.canNest(containerView, name);  //if nestable, returns the index id of the parent view to nest under
+			action_for = this.getActionFor(containerView, name); //if this is an action in response to a verb, return the index id of the verb it's in response to
 			id = Date.now().toString();
 
 			model = this.store.createRecord('ivr'+name, model_in);
@@ -820,12 +877,12 @@ App.IvrCreateController = Ember.Controller.extend({
 				item: {},
 				index: id,
 				parent_id: parent_id,
-				action_for: action_for,
+				action_for: !!parent_id ? action_for : undefined,
 				isNested: function() {
 					return !!this.parent_id;
 				}.property('parent_id'),
 				isAction: function() {
-					return !!this.action_for;
+					return !!this.parent_id && !!this.action_for;
 				}.property('action_for'),
  				layoutName: 'components/ivr-'+name, //parent_id ? 'components/ivr-'+name+'-nested' : 'components/ivr-'+name,
 				classNames: ['row', 'ivr-'+name+'-view'+id],
@@ -852,13 +909,13 @@ App.IvrCreateController = Ember.Controller.extend({
 			compClass = containerView.createChildView(compClass);
 			containerView.pushObject(compClass);
 
-			this.set('containerView', containerView);
+			this.get('controller').set('model._containerView', containerView);
 		}
 	},
-	canNest: function(verbToNest) {
+	canNest: function(container, verbToNest) {
 		var nestable = ['gather'];
 		var allowedToNest = ['say', 'pause'];
-		var containerView = this.get('containerView');//Ember.View.views['ivrcontainerview'];
+		var containerView = container; //this.get('controller').get('model._containerView');//Ember.View.views['ivrcontainerview'];
 		var views = containerView.toArray();  //containerView.get('content');
 		var view = undefined;
 
@@ -874,9 +931,9 @@ App.IvrCreateController = Ember.Controller.extend({
 		}
 		return view;
 	},
-	getActionFor: function(verb) {
+	getActionFor: function(container, verb) {
 		var actions = ['dial', 'record', 'message', 'email', 'webtask'];
-		var containerView = this.get('containerView');
+		var containerView = container; //this.get('model._containerView');
 		var views = containerView.toArray();
 
 		if (actions.indexOf(verb) > -1 && views.length) {
@@ -885,16 +942,16 @@ App.IvrCreateController = Ember.Controller.extend({
 	}
 });
 
-App.IvrCreateView = Ember.View.extend({
-	layoutName: 'ivr/create',
+App.CreateIvrView = Ember.View.extend({
+	layoutName: 'ivr/createIvr',
 	init: function() {
-    	var actions, ivr, containerView;
+    	var actions, id, ivr, containerView;
     	var childViews;
 		
 		this._super.apply(this, arguments);
 		
-		ivr = this.get('controller').get('model').get('ivr_id');
-	   	this.get('controller').set('verbs', ivr.get('actions'));
+		ivr = this.get('controller').get('model');
+	   	this.get('controller').set('model._verbs', ivr ? ivr.get('actions') : []);
 		
 		containerView = Ember.ContainerView.extend({
 			elementId: 'ivrcontainerview',
@@ -909,14 +966,15 @@ App.IvrCreateView = Ember.View.extend({
 				}
 			}
 		});
-		this.get('controller').set('ivr_name', ivr.get('ivr_name'));
-		this.get('controller').set('containerView', containerView.create());
+
+		this.get('controller').set('model.ivr_name', ivr ? ivr.get('ivr_name') : 'Default');
+		this.get('controller').set('model._containerView', containerView.create());
 	},
 	didInsertElement: function() {
 		var controller = this.get('controller');
-		var verbs = controller.get('verbs');
+		var verbs = controller.get('model._verbs');
 
-		if (verbs.length) parse(verbs);
+		if (verbs && verbs.length) parse(verbs);
 
 		function parse(arr) {
 			for (var i=0, item; i < arr.length; i++) {
@@ -929,6 +987,20 @@ App.IvrCreateView = Ember.View.extend({
 	}
 });
 
+/*********************************************************************/
+
+/* Custom Select element */
+
+App.SelectsView = Ember.Select.extend({
+	_prev: undefined,
+	didInsertElement: function() {
+		this.set('_prev', this.get('value'));
+		this.set('selectionDidChange', function(item) {
+			var action = this.get('action');
+			this.get('controller').send(action, this.get('_prev'), item.selection, item);
+		});
+	}
+});
 /*********************************************************************/
 
 /* Handlebars Helper Functions */
@@ -944,6 +1016,7 @@ Ember.Handlebars.helper('tn-to-class', function(tn) {
 Ember.Handlebars.helper('is-selected', function(model, current) {
 	return model === current ? true : false;
 });
+
 /********************************/
 
 /* HELPER FUNCTIONS */

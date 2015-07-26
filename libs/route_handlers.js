@@ -120,7 +120,38 @@ module.exports = {
 		//TODO
 	},
 	updatePhoneNumber: function(request, reply) {
-		//TODO
+		var _id;
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			return helpers.getUserAccountInformation(id, false);
+		})
+		.then(function(user) {
+			var numbers = user.twilio.associated_numbers;
+			var nums, temp;
+
+			nums = numbers.map(function(item) {
+				if (item.sid === request.params.id) {
+					return _.merge(item, request.payload.number);
+				} else {
+					return item;
+				}
+			});
+			
+			temp = {twilio: {associated_numbers: nums}};
+			//console.log('TEMP: ', temp.twilio.associated_numbers)
+
+			return helpers.updateAccount(_id, temp);
+		})
+		.then(function(doc) {
+
+			//FIX RETURN VALUE - need to return updated number model
+			var temp = helpers.formatUserRecordPartial(doc, [request.params.id]);
+			reply(JSON.stringify(temp));
+		})
+		.catch(function(err) {
+			console.log('updatePhoneNumber error: ', err);
+			reply(JSON.stringify({status: 1, reason: err.toString()}));
+		});
 	},
 	buyPhoneNumber: function(request, reply) {
 		var userid, list, numbers;
@@ -220,9 +251,42 @@ module.exports = {
 		});
 	},
 	updateIvr: function(request, reply) {
-		//TODO: update IVR record
+		var _id;
+
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			return helpers.updateIvrRecord(request.payload.ivr, request.params.id, _id);
+		})
+		.then(function(doc) {
+			reply(JSON.stringify(doc));
+		})
+		.catch(function(err) {
+			var msg;
+			console.log('getIvr error: ', err);
+
+			if ('status' in err) {
+				msg = "Cannot complete your request at this time: "+err.code;
+			} else msg = err.toString();
+			reply(JSON.stringify({status: 1, reason: msg}));
+		});
 	},
 	deleteIvr: function(request, reply) {
-		//TODO: delete IVR record
+		var _id;
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			return helpers.deleteIvrRecord(request.params.id, _id);
+		})
+		.then(function(doc) {
+			reply();
+		})
+		.catch(function(err) {
+			var msg;
+			console.log('getIvr error: ', err);
+
+			if ('status' in err) {
+				msg = "Cannot complete your request at this time: "+err.code;
+			} else msg = err.toString();
+			reply(JSON.stringify({status: 1, reason: msg}));
+		});
 	}
 }

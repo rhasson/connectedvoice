@@ -1,4 +1,4 @@
-script(type="text/x-handlebars", data-template-name="ivr/create")
+script(type="text/x-handlebars", data-template-name="ivr/createIvr")
   div.col-md-12
     div.panel.panel-primary
       div.panel-heading
@@ -9,7 +9,7 @@ script(type="text/x-handlebars", data-template-name="ivr/create")
   div.col-md-12
     div.well.well-lg
       p#helper-message Start defining what your customer will experience when calling {{model.friendly_name}}
-      p#helper-message Give your IVR a friendly name so we can refer to it later {{input class="va-ivr-tn va-inline-space" type="text" value=ivr_name}}
+      p#helper-message Give your IVR a friendly name so we can refer to it later {{input class="va-ivr-lg-num" type="text" value=model.ivr_name}}
       div.row
         div.col-md-2
           div.panel.panel-info
@@ -28,7 +28,7 @@ script(type="text/x-handlebars", data-template-name="ivr/create")
                 <li class="list-group-item"><a href="#" {{action "select" "email" bubbles=false}}>E-MAIL</a></li>
                 <li class="list-group-item"><a href="#" {{action "select" "webtask" bubbles=false}}>WEBTASK</a></li>
         div.col-md-10(id="ivr-content")
-          {{view view.controller.containerView}}
+          {{view view.controller.model._containerView}}
 
       div.row
         div.col-md-12

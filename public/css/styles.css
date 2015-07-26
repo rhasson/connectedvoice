@@ -34,6 +34,9 @@
 .va-ivr-md-num {
 	width: 100px !important;
 }
+.va-ivr-lg-num {
+	width: 200px !important;
+}
 .va-action-label {
 	background-color: #dff0d8 !important;
 }
@@ -44,4 +47,10 @@
 }
 .add-num-box {
 	padding: 0px 15px 15px 15px;
+}
+.red {
+	color: red;
+}
+.green {
+	color: green;
 }

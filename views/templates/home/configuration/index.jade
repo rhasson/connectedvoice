@@ -3,4 +3,6 @@ script(type="text/x-handlebars", data-template-name="configuration")
     div.col-md-9
       div.col-md-3.add-num-box
         {{#link-to "numbers.create" account}}<button type="button" class="btn btn-primary">Add New Number</button>{{/link-to}}
+      div.col-md-3.add-num-box
+        {{#link-to "ivr.index" account}}<button type="button" class="btn btn-primary">Manage IVRs</button>{{/link-to}}
   {{phone-numbers model=model action="takeAction"}}

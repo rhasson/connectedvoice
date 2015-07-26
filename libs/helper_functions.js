@@ -23,7 +23,6 @@ var dbinsert = whennode.lift(db.insert),
 	dbfetch = whennode.lift(db.fetch),
 	dbremove = whennode.lift(db.destroy);
 
-
 module.exports = helpers = {
 	isUserLoggedIn: function(cookie) {
 		//console.log('cookie: ', cookie)
@@ -43,7 +42,7 @@ module.exports = helpers = {
 			else user = helpers.cleanUserRecord(body);
 
 			if (_.isArray(ivr_ids) && ivr_ids.length) {
-				return helpers.getIvrRecord(ivr_ids).then(function(ivr) {
+				return helpers.getIvrRecord(id).then(function(ivr) {
 					user.ivr = ivr;
 					return when.resolve(user)
 				});
@@ -261,6 +260,9 @@ module.exports = helpers = {
 	twilioRemovePhoneNumbers: function(tn_sid, account_sid) {
 		return twilio.accounts(account_sid).incomingPhoneNumbers(tn_sid).delete();
 	},
+	updatePhoneNumber: function(id, params) {
+		//
+	},
 	getIvrRecord: function(ids) {
 //				ivr_ids = _.pluck(record.number, 'ivr_id');
 		if (_.isArray(ids) && ids.length) {
@@ -269,10 +271,29 @@ module.exports = helpers = {
 				var body = ivrs.shift();
 				var results = _.pluck(body.rows, 'doc');
 
-				record = helpers.formatIvrRecord(results);
+				record = helpers.formatIvrRecord(results.filter(function(i) { return i !== undefined }));
 				return when.resolve(record);
 			});
-		} else return when.reject(new Error('Expecting an array with ids but didnt get that'));
+		} else if (typeof ids === 'string') {
+			return dbsearch('searchIvr', 'searchIvr', {q: 'account_id:'+ids, include_docs: true})
+			.then(function(response) {
+				var results;
+				var body = response.shift();
+				var headers = response.shift();
+				
+				if (headers['status-code'] !== 200) return when.reject(new Error('IVR DB Search returned error - '+headers['status-code']));
+
+				if (body && body.rows.length > 0) {
+					results = _.pluck(body.rows, 'doc');
+					record = helpers.formatIvrRecord(results.filter(function(i) { return i !== undefined }));
+					return when.resolve(record);
+				}
+			})
+			.catch(function(err) {
+				return when.reject(new Error('IVR DB Search failed - ' + err.message));
+			});
+		} 
+		return when.reject(new Error('Expecting an array with ids or a string with an account id but didnt get that'));
 	},
 	createIvrRecord: function(params, userid) {
 		var ivr_doc;
@@ -280,7 +301,7 @@ module.exports = helpers = {
 		var record;
 		//doc with new _id and _rev for the ivr record created
 		//update the associated_numbers array inside the account to include an ivr_id with the new _id
-		if ('account_id' in params && params.account_id === userid && 'number_id' in params) {
+		if ('account_id' in params && params.account_id === userid /*&& 'number_id' in params*/) {
 
 			params.type = 'ivr';
 
@@ -306,8 +327,8 @@ module.exports = helpers = {
 				var ivr_ids;
 
 				record = helpers.formatUserRecord(doc);
-				ivr_ids = _.pluck(record.number, 'ivr_id');
-				return helpers.getIvrRecord(ivr_ids).then(function(results) {
+				//ivr_ids = _.pluck(record.number, 'ivr_id');
+				return helpers.getIvrRecord(params.account_id).then(function(results) {
 					record.ivr = results;
 					return when.resolve(record);
 				});
@@ -322,11 +343,42 @@ module.exports = helpers = {
 			});
 		} else return when.reject(new Error('Did not provide account or number IDs with request'));
 	},
-	updateIvrRecord: function(params) {
+	updateIvrRecord: function(ivr, ivr_id, userid) {
+		if ('account_id' in ivr && ivr.account_id === userid) {
+			return dbget(ivr_id).then(function(doc) {
+				var body = doc.shift();
+				var headers = doc.shift();
+				var newdoc;
 
+				delete body._id;
+				newdoc = _.merge(body, ivr);
+				return dbinsert(newdoc, ivr_id).then(function() {
+					return dbget(ivr_id).then(function(d) {
+						var body = d.shift();
+						var record = helpers.formatIvrRecord([body]);
+
+						return when.resolve({ivr: record});
+					});
+				}).catch(function(err) {
+					return when.reject(new Error(err.toString()));
+				})
+			});
+		} else {
+			return when.reject(new Error('Account ID was not found in the request'));
+		}
 	},
-	deleteIvrRecord: function(params) {
-
+	deleteIvrRecord: function(ivr_id, userid) {
+		return dbget(ivr_id).then(function(doc) {
+			var body = doc.shift();
+			return dbremove(body._id, body._rev).then(function(doc) {
+				var body = doc.shift();
+				if (body.ok === true) return when.resolve();
+				else when.reject(new Error('Failed to delete IVR record'));
+			})			
+		})
+		.catch(function(err) {
+			return when.reject(new Error(err.toString()));
+		});
 	},
 	combinePromiseResponses: function(tns, results) {
 		Object.keys(tns).map(function(tn, i) {
@@ -345,11 +397,10 @@ module.exports = helpers = {
 		return doc;
 	},
 	formatIvrRecord: function(list) {
-		return list.map(function(item) {
+		return _.uniq(list, '_id').map(function(item) {
 			return {
 				id: item._id,
 				account_id: item.account_id,
-				number_id: item.number_id,
 				ivr_name: item.ivr_name,
 				actions: item.actions,
 				date_updated: item.date_updated

@@ -330,19 +330,6 @@ App.ApplicationRoute = Ember.Route.extend({
 					self.get('controller').set('notify_message', 'Failed to save changes to server.  Please try again later');
 					toggleMessageSlide();
 				});
-/*
-			this.store.find('number', params.number_id).then(function(item) {
-				item.set('ivr_id', ivr_id);
-				item.save().then(function(resp) {
-					self.refresh();
-				})
-				.catch(function(err) {
-					console.log('err: ', err)
-					self.get('controller').set('notify_message', 'Failed to save changes to server.  Please try again later');
-					toggleMessageSlide();
-				});
-			});
-*/
 		}
 	}
 });
@@ -377,19 +364,23 @@ App.LogInComponent = Ember.Component.extend({
 			var data = {};
 			var temp = $("#login_password");
 			var valid = validateLoginForm();
+			var jq;
 
 			if (valid.status === 0) {
 				data.email = $("#login_email").val();
 				data.password = CryptoJS.SHA512(temp.val()).toString(CryptoJS.enc.Base64);
-				$.post('/login', data, function(d, status, xhr) {
-					console.log('Login: ', d, status)
-					if (d && d.status === 0) {
-						resetLoginForm();
-						self.sendAction('loginAction', d.user_id, true);
-					} else {
-						self.sendAction('notifyMessage', d.reason);
-					}
-				}, 'json');
+				jq = $.post('/login', data, function(d, status, xhr) {
+						console.log('Login: ', d, status)
+						if (d && d.status === 0) {
+							resetLoginForm();
+							self.sendAction('loginAction', d.user_id, true);
+						} else {
+							self.sendAction('notifyMessage', d.reason);
+						}
+					}, 'json');
+				jq.fail(function(xhr, status, err) {
+					self.sendAction('notifyMessage', 'Email or password were entered incorrectly');
+				});
 			} else {
 				valid.element.focus();
 				self.sendAction('notifyMessage', 'Email or password were entered incorrectly');

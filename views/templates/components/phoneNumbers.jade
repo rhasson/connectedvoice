@@ -10,7 +10,7 @@ script(type="text/x-handlebars", data-template-name="components/phone-numbers")
         <tbody>
         {{#each model.content as |number|}}
         <tr>
-        <th scope="row"> {{#link-to "createIvr.edit" number.account_id number.id}}{{number.friendly_name}}{{/link-to}}</th>
+        <th scope="row"> {{number.friendly_name}}</th>
         <td>
         <span {{bind-attr class=":glyphicon number.capabilities.voice:glyphicon-earphone:hidden"}} alt="Voice"></span>
         <span {{bind-attr class=":glyphicon number.capabilities.sms:glyphicon-comment:hidden"}} alt="SMS"></span>

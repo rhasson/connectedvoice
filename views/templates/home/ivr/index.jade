@@ -18,7 +18,7 @@ script(type="text/x-handlebars", data-template-name="ivr/index")
         <tr>
         <th scope="row"> {{#link-to "createIvr.edit" ivr.account_id ivr.id}}{{ivr.ivr_name}}{{/link-to}}</th>
         <td><span>{{format-date ivr.date_updated}}</span></td>
-        <td><span class="glyphicon glyphicon-remove-circle red" {{action "removeIvrAction" ivr}}></span></td>
+        <td><span class="glyphicon glyphicon-remove-circle red" {{action "showModal" "remove-ivr-modal" ivr}}></span></td>
         </tr>
         {{/each}}
         </tbody>

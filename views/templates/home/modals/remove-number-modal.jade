@@ -1,0 +1,4 @@
+script(type="text/x-handlebars", data-template-name="remove-number-modal")
+  {{#x-modal title="Delete Phone Number" ok="removeNumberAction" close="hideModal" data=model}}
+  <p>You are trying to delete {{model.friendly_name}}, are you sure?</p>
+  {{/x-modal}}

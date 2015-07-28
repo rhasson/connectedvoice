@@ -1,0 +1,4 @@
+script(type="text/x-handlebars", data-template-name="remove-ivr-modal")
+  {{#x-modal title="Delete IVR" ok="removeIvrAction" close="hideModal" data=model}}
+  <p>You are trying to delete {{model.ivr_name}}, are you sure?</p>
+  {{/x-modal}}

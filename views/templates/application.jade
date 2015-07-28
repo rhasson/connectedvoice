@@ -11,3 +11,4 @@ script(type="text/x-handlebars")
         {{log-in isLoggedIn=isLoggedIn loginAction="redirectOnLogin" logoutAction="redirectOnLogout" notifyMessage="notifyMessage"}}
 
   {{outlet}}
+  {{outlet 'modal'}}

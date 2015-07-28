@@ -298,12 +298,33 @@ App.ApplicationRoute = Ember.Route.extend({
 		takeAction: function(action, params) {
 			this.send(action, params);
 		},
-		//params: number_id
-		removeNumber: function(params) {
-			this.store.find('number', params.number_id).then(function(item) {
+		showModal: function(name, data) {
+			if (typeof name === 'object') {
+				data = name.model;
+				name = name.name;
+			}
+			this.render(name, {
+				into: 'application',
+				outlet: 'modal',
+				model: data
+			});
+		},
+		hideModal: function() {
+			this.disconnectOutlet({
+				outlet: 'modal',
+				parentView: 'application'
+			});
+		},
+		//params: object with id or a number_id
+		removeNumberAction: function(params) {
+			var self = this;
+			var id = params ? params.get('id') : params.number_id;
+
+			this.store.find('number', id).then(function(item) {
 				item.deleteRecord();
 				item.save().then(function(resp) {
-					self.refresh();
+					//this.refresh();
+					//console.log(self.container.lookup('view:configuration'));
 				})
 				.catch(function(err) {
 					console.log('err: ', err)
@@ -367,7 +388,7 @@ App.LogInComponent = Ember.Component.extend({
 			var jq;
 
 			if (valid.status === 0) {
-				data.email = $("#login_email").val();
+				data.email = $("#login_email").val().toLowerCase();
 				data.password = CryptoJS.SHA512(temp.val()).toString(CryptoJS.enc.Base64);
 				jq = $.post('/login', data, function(d, status, xhr) {
 						console.log('Login: ', d, status)
@@ -550,7 +571,7 @@ App.ConfigurationRoute = Ember.Route.extend({
 	    	var id = item.get('ivr_id');
 	    	if (id) {
 	    		x = ivrs.findBy('id', id);
-	    		item.set('ivr_name', x.get('ivr_name'));
+	    		if (x) item.set('ivr_name', x.get('ivr_name'));
 	    	}
 	    	return item;
 	    });
@@ -572,8 +593,15 @@ App.ConfigurationRoute = Ember.Route.extend({
 
 App.PhoneNumbersComponent = Ember.Component.extend({
 	actions: {
-		removeNumberAction: function(id) {
-			this.sendAction('action', 'removeNumber', {number_id: id});
+		removeNumberAction: function(number) {
+			console.log('REMOVE ACTION: ', number);
+			//this.sendAction('action', 'removeNumber', {number_id: number.id});
+		},
+		showModal: function(name, number) {
+			this.sendAction('action', 'showModal', {name: name, model: number});
+		},
+		hideModal: function() {
+			this.sendAction('action', 'hideModal');
 		},
 		switchToAddNumComp: function() {
 			this.sendAction('action', 'switchComponent', {name: 'add-phone-number'});
@@ -665,6 +693,7 @@ App.NumbersRoute = Ember.Route.extend({
 	}
 });
 
+/*
 App.NumbersIndexController = Ember.Controller.extend({
 	needs: ['home', 'application'],
 	actions: {
@@ -691,6 +720,7 @@ App.NumbersIndexController = Ember.Controller.extend({
 		});
 	}.property('model.numbers')
 });
+*/
 
 App.NumbersCreateController = Ember.Controller.extend({
 	needs: ['home'],
@@ -698,30 +728,34 @@ App.NumbersCreateController = Ember.Controller.extend({
 		//list available phone numbers method fired by AddPhoneNumbers component
 		getAvailableNumbers: function(params) {
 			var self = this;
-			$.get('/api/v0/number', params, function(resp, status, xhr) {
-				console.log(resp, status)
+			var jq = $.get('/api/v0/number', params, function(resp, status, xhr) {
 				if (resp) {
-					if ('status' in resp && resp.status === 1) self.set('phoneList', []);
-					else if (Object.keys(resp).length > 0) self.set('phoneList', resp);
+					if (Object.keys(resp).length > 0) self.set('phoneList', resp);
+					else self.set('phoneList', []);
 				}
 			}, 'json');
+			jq.catch(function(err) {
+				self.get("controllers.application").set('notify_message', 'Failed to get phone numbers.  Please try again later');
+				toggleMessageSlide();
+				self.set('phoneList', []);
+			});
 		},
 		buyPhoneNumbers: function(tns) {
 			var self = this;
 			var model;
+			var jq;
 			console.log('Buying TNS: ', tns)
-			$.post('/api/v0/number', tns, function(resp, status, xhr) {
+			jq = $.post('/api/v0/number', tns, function(resp, status, xhr) {
 				console.log('BUYING RESP: ', resp)
 				if (resp) {
-					if ('status' in resp && resp.status === 1) {
-						self.get("controllers.application").set('notify_message', 'Failed to provision phone number.  ('+resp.reason+')');
-						toggleMessageSlide();
-					} else {
-						self.store.pushPayload('account', resp);
-						self.transitionToRoute('numbers.index');
-					}
+					self.store.pushPayload('account', resp);
+					self.transitionToRoute('numbers.index');
 				}
 			}, 'json');
+			jq.catch(function(err) {
+				self.get("controllers.application").set('notify_message', 'Failed to provision phone number.  ('+err+')');
+				toggleMessageSlide();
+			});
 		}
 	}
 });
@@ -822,7 +856,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			ivr.set('actions', verbs);
 			ivr.set('date_updated', new Date());
 			
-			console.log('FINAL IVR: ', ivr.toJSON());
+			//console.log('FINAL IVR: ', ivr.toJSON());
 
 			ivr.save().then(function() {			
 				//After model was saved successfully clear up IVR creation variables and redirect to ivr.index
@@ -1011,6 +1045,24 @@ App.CreateIvrView = Ember.View.extend({
 				if ('nested' in item && item.nested) { parse(item.nested); }
 				else if ('actions' in item && item.actions) { parse(item.actions); }
 			}
+		}
+	}
+});
+
+/*********************************************************************/
+
+/* Modal Component */
+
+App.XModalComponent = Ember.Component.extend({
+	didInsertElement: function() {
+		this.$('.modal').modal().on('hidden.bs.modal', function() {
+			this.sendAction('close');
+		}.bind(this));
+	},
+	actions: {
+		ok: function(data) {
+			this.$('.modal').modal('hide');
+			this.sendAction('ok', data);
 		}
 	}
 });

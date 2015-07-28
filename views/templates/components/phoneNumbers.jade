@@ -18,7 +18,7 @@ script(type="text/x-handlebars", data-template-name="components/phone-numbers")
         </td>
         <td>{{view "selects" action="selectChangeAction" content=model.names value=number.ivr_name prompt="-- No IVR --" class="form-control va-inline-space"}}</td>
         <td>
-        <span class="glyphicon glyphicon-remove-circle red" {{action "removeNumberAction" number.id}}></span>
+        <span class="glyphicon glyphicon-remove-circle red" {{action "showModal" "remove-number-modal" number}}></span>
         <span class="glyphicon glyphicon-ok-circle gray" {{action "saveIvrChangeAction" number.id number.ivr_name}}></span>
         </td>
         </tr>

@@ -307,16 +307,17 @@ module.exports = helpers = {
 
 			params.type = 'ivr';
 
-			ivr = helpers.createWebtask(params, userid);  //checks if webtask is used as an action and creates a webtask token
+			//checks if webtask is used as an action and creates a webtask token
+			return helpers.createWebtask(params, userid).then(function(actions) {
+				return dbinsert(actions).then(function(doc) {
+					ivr_doc = doc.shift();
 
-			return dbinsert(params).then(function(doc) {
-				ivr_doc = doc.shift();
+					return dbget(ivr_doc.id).then(function(d) {
+						var body = d.shift();
+						var record = helpers.formatIvrRecord([body]);
 
-				return dbget(ivr_doc.id).then(function(d) {
-					var body = d.shift();
-					var record = helpers.formatIvrRecord([body]);
-
-					return when.resolve({ivr: record});
+						return when.resolve({ivr: record});
+					});
 				});
 			});
 		} else return when.reject(new Error('Did not provide account or number IDs with request'));
@@ -385,16 +386,27 @@ module.exports = helpers = {
 
 		function createTask(arr) {
 			return when.map(arr, function(item) {
-				return post(config.webtask.issueToken + '?key=' + config.webtask.key,
-					{
+				return post({
+					url: config.webtask.issueToken + '?key=' + config.webtask.key,
+					method: 'POST',
+					json: true,
+					body: {
+						ten: config.webtask.container,
 						pb: 1,
 						pctx: {
-							statusUrl: config.callbacks.StatusCallback.replace('%userid', _id);
-							actionUrl: config.callbacks.ActionUrl.replace('%userid', _id);
-						}
+							statusUrl: config.callbacks.StatusCallback.replace('%userid', _id),
+							actionUrl: config.callbacks.ActionUrl.replace('%userid', _id)
+						},
 						url: item.url
 					}
-			 	).then(function(data) { return {index: item.index, url: item.url, body: data.pop()} } );
+				}).then(function(resp) {
+					var headers = resp.shift();
+					var body = resp.shift();
+					if (headers.statusCode === 200) {
+						item.body = body;
+					} else item.body = undefined;
+					return item;
+				});
 			});
 		}
 
@@ -404,13 +416,10 @@ module.exports = helpers = {
 
 			for (var i=0; i < data.length; i++) {
 				for (var x=0; x < actions.length; x++) {
-					//console.log('x: ', x, ' - ', actions[x])
 					if (actions[x].index === data[i].index) actions[x].webtask_url = data[i].body
 					if (actions[x].verb === 'gather') {
-						console.log('INSIDE GATHER')
 						for (var j=0; j < actions[x].nested.length; j++) {
-							console.log('j: ', j, ' - ', actions[x].nested[j])
-							if (actions[x].nested[j].actions[0].index === data[i].index) actions[x].nested[j].actions[0].webtask_url = data[i].body
+							if (actions[x].nested[j].actions[0].index === data[i].index) actions[x].nested[j].actions[0].webtask_token = data[i].body
 						}
 					}
 				};
@@ -423,10 +432,7 @@ module.exports = helpers = {
 		}).then(function(tasks) {
 			console.log(tasks)
 			return updateTasks(ivr.actions, tasks);
-		}).then(function(actions) {
-			//saveToDB()
 		});
-
 	},
 	updateWebtask: function(url, token, params){
 		//revoke old token

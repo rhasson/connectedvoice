@@ -1,0 +1,10 @@
+script(type="text/x-handlebars", data-template-name="components/ivr-webtask")
+  div.row(id="ivr-webtask-view")
+    div.form-inline
+      div.form-group
+        {{#if isNested}}
+        <span id="ivr-webtask-nested-remove" class="glyphicon glyphicon-arrow-right va-inline-space"></span>
+        {{/if}}
+        label.form-control.va-action-label.va-inline-space WEBTASK
+        {{input class="form-control va-ivr-text va-inline-space" type="text" placeholder="Enter URL to the code to execute" value=item.nouns.text}}
+        <span id="ivr-webtask-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>

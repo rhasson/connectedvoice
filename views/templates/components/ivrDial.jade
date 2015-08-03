@@ -3,7 +3,7 @@ script(type="text/x-handlebars", data-template-name="components/ivr-dial")
     div.form-inline
       div.form-group
         {{#if isAction}}
-        <span id="ivr-say-nested-remove" class="glyphicon glyphicon-transfer va-inline-space"></span>
+        <span id="ivr-dial-nested-remove" class="glyphicon glyphicon-transfer va-inline-space"></span>
         {{/if}}
         label.form-control.va-action-label.va-inline-space DIAL
         {{input class="form-control va-ivr-tn va-inline-space" type="text" placeholder="Phone number" value=item.nouns.text}}

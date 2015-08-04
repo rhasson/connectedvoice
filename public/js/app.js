@@ -1252,7 +1252,7 @@ function serializeIvr(views) {
 		if (!Object.keys(obj).length) return undefined;
 
 		for (var i in obj) {
-			if (obj.hasOwnProperty(i) && typeof obj[i] !== 'function') temp[i] = obj[i];
+			if (obj.hasOwnProperty(i) && typeof obj[i] !== 'function') temp[i] = obj[i].trim();
 		}
 
 		return temp;

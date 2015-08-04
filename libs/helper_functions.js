@@ -7,7 +7,7 @@ var fs = require('fs'),
 	crypto = require('crypto'),
 	_ = require('lodash'),
 	config = require('../config.json'),
-	request = request('request'),
+	request = require('request'),
 	when = require('when'),
 	whennode = require('when/node'),
 	twilio = require('twilio')(config.twilio.production.account_sid, config.twilio.production.auth_token),
@@ -405,8 +405,8 @@ module.exports = helpers = {
 		});
 	},
 	revokeWebtaskToken: function(tokens) {
-		if (tokens && tokens typeof String) tokens = [tokens];
-		if (tokens && tokens typeof Array) return when.map(tokens, revokeToken);
+		if (tokens && typeof tokens === 'string') tokens = [tokens];
+		if (tokens &&  tokens instanceof Array) return when.map(tokens, revokeToken);
 		else return when.resolve();
 		
 		function revokeToken(token) {

@@ -7,7 +7,7 @@ var fs = require('fs'),
 	crypto = require('crypto'),
 	_ = require('lodash'),
 	config = require('../config.json'),
-	http = request('request'),
+	request = request('request'),
 	when = require('when'),
 	whennode = require('when/node'),
 	twilio = require('twilio')(config.twilio.production.account_sid, config.twilio.production.auth_token),
@@ -23,6 +23,7 @@ var dbinsert = whennode.lift(db.insert),
 	dbget = whennode.lift(db.get),
 	dbfetch = whennode.lift(db.fetch),
 	dbremove = whennode.lift(db.destroy);
+	http = whennode.lift(request);
 
 module.exports = helpers = {
 	isUserLoggedIn: function(cookie) {
@@ -297,10 +298,6 @@ module.exports = helpers = {
 		return when.reject(new Error('Expecting an array with ids or a string with an account id but didnt get that'));
 	},
 	createIvrRecord: function(params, userid) {
-		var ivr_doc;
-		var account;
-		var record;
-		var ivr;
 		//doc with new _id and _rev for the ivr record created
 		//update the associated_numbers array inside the account to include an ivr_id with the new _id
 		if ('account_id' in params && params.account_id === userid /*&& 'number_id' in params*/) {
@@ -308,9 +305,9 @@ module.exports = helpers = {
 			params.type = 'ivr';
 
 			//checks if webtask is used as an action and creates a webtask token
-			return helpers.createWebtask(params, userid).then(function(actions) {
-				return dbinsert(actions).then(function(doc) {
-					ivr_doc = doc.shift();
+			return helpers.createWebtask(params, userid).then(function(ivr) {
+				return dbinsert(ivr).then(function(doc) {
+					var ivr_doc = doc.shift();
 
 					return dbget(ivr_doc.id).then(function(d) {
 						var body = d.shift();
@@ -330,17 +327,20 @@ module.exports = helpers = {
 				var newdoc;
 
 				delete body._id;
-				newdoc = _.merge(body, ivr);
-				return dbinsert(newdoc, ivr_id).then(function() {
-					return dbget(ivr_id).then(function(d) {
-						var body = d.shift();
-						var record = helpers.formatIvrRecord([body]);
+				
+				return updateWebtask(ivr, body, userid).then(function(new_ivr) {
+					newdoc = _.merge(body, new_ivr);
+					return dbinsert(newdoc, ivr_id).then(function() {
+						return dbget(ivr_id).then(function(d) {
+							var body = d.shift();
+							var record = helpers.formatIvrRecord([body]);
 
-						return when.resolve({ivr: record});
+							return when.resolve({ivr: record});
+						});
+					}).catch(function(err) {
+						return when.reject(new Error(err.toString()));
 					});
-				}).catch(function(err) {
-					return when.reject(new Error(err.toString()));
-				})
+				});
 			});
 		} else {
 			return when.reject(new Error('Account ID was not found in the request'));
@@ -360,83 +360,126 @@ module.exports = helpers = {
 		});
 	},
 	createWebtask: function(ivr, userid) {
-		var post = whennode.lift(http.post);
 		var _id = new Buffer(userid, 'utf8').toString('base64');
 
-		function extractTasks(arr) {
-			var tasks = [];
-			var child;
-			for (var i=0; i < arr.length; i++) {
-				if (arr[i].verb === 'webtask') tasks.push({index: arr[i].index, url: arr[i].nouns.text});
-				else if (arr[i].verb === 'gather') {
-					scan(arr[i].nested)
-				}
-			}
-
-			function scan(nested) {
-				for (var j=0; j < nested.length; j++) {
-					child = _.find(nested[j].actions, 'verb', 'webtask')
-					if (child) tasks.push({index: child.index, url: child.nouns.text})
-				}
-			};
-
-			return when.resolve(tasks);
-		}
-
-
-		function createTask(arr) {
-			return when.map(arr, function(item) {
-				return post({
-					url: config.webtask.issueToken + '?key=' + config.webtask.key,
-					method: 'POST',
-					json: true,
-					body: {
-						ten: config.webtask.container,
-						pb: 1,
-						pctx: {
-							statusUrl: config.callbacks.StatusCallback.replace('%userid', _id),
-							actionUrl: config.callbacks.ActionUrl.replace('%userid', _id)
-						},
-						url: item.url
-					}
-				}).then(function(resp) {
-					var headers = resp.shift();
-					var body = resp.shift();
-					if (headers.statusCode === 200) {
-						item.body = body;
-					} else item.body = undefined;
-					return item;
-				});
-			});
-		}
-
-		function updateTasks(actions, data) {
-			var index = -1;
-			var item;
-
-			for (var i=0; i < data.length; i++) {
-				for (var x=0; x < actions.length; x++) {
-					if (actions[x].index === data[i].index) actions[x].webtask_url = data[i].body
-					if (actions[x].verb === 'gather') {
-						for (var j=0; j < actions[x].nested.length; j++) {
-							if (actions[x].nested[j].actions[0].index === data[i].index) actions[x].nested[j].actions[0].webtask_token = data[i].body
-						}
-					}
-				};
-			}
-			return when.resolve(actions);
-		}
-
-		return extractTasks(ivr.actions).then(function(resp) {
-			return createTask(resp);
+		return helpers.extractWebtaskTasks(ivr.actions).then(function(resp) {
+			return helpers.createWebtaskTask(resp, _id);
 		}).then(function(tasks) {
 			console.log(tasks)
-			return updateTasks(ivr.actions, tasks);
+			return updateWebtasksInIvr(ivr, tasks);
 		});
 	},
-	updateWebtask: function(url, token, params){
-		//revoke old token
-		//create new token
+	updateWebtask: function(new_ivr, current_ivr, userid){
+		var _id = new Buffer(userid, 'utf8').toString('base64');
+		return when.map([new_ivr.actions, current_ivr.actions], helpers.extractWebtaskTasks).then(function(data) {
+			var new_arr = data.shift();
+			var current_arr = data.shift();
+			var toBeRevoked = [];
+			var toBeIssued = [];
+
+			for (var i=0, temp; i < new_arr.length; i++) {
+				temp = _.find(current_arr, {index: new_arr[i].index});
+				if (temp) {
+					if (new_arr[i].url != temp.url) {
+						toBeRevoked.push(temp.webtask_token);
+						toBeIssued.push(new_arr[i]);
+					}
+				}
+			}
+
+			return helpers.createWebtaskTask(toBeIssued, _id).then(function(tasks) {
+				console.log(tasks)
+				revokeTokens(toBeRevoked).catch(function(err) {
+					console.log('Failed to revoke webtask token - ', err);
+				});
+				return helpers.updateWebtasksInIvr(new_ivr, tasks);
+			})
+
+		});
+		//revoke old tokens
+		function revokeTokens(tokens) {
+			if (tokens && tokens typeof String) tokens = [tokens];
+			if (tokens && tokens typeof Array) return when.map(tokens, helpers.revokeWebtaskToken);
+			else return when.resolve();
+		}
+	},
+	revokeWebtaskToken: function(token) {
+		return http({
+			url: config.webtask.revokeToken + '?key=' + config.webtask.key,
+			method: 'POST',
+			json: true,
+			body: {
+				ten: config.webtask.container,
+				token: token
+			}
+		}).then(function(resp) {
+			var headers = resp.shift();
+			if (headers.statusCode === 200) {
+				return when.resolve();
+			} else return when.reject(new Error(headers.statusMessage));
+		}).catch(function(err) {
+			return when.reject(new Error(err));
+		});
+	},
+	createWebtaskTask: function(arr, userid) {
+		return when.map(arr, function(item) {
+			return post({
+				url: config.webtask.issueToken + '?key=' + config.webtask.key,
+				method: 'POST',
+				json: true,
+				body: {
+					ten: config.webtask.container,
+					pb: 1,
+					pctx: {
+						statusUrl: config.callbacks.StatusCallback.replace('%userid', userid),
+						actionUrl: config.callbacks.ActionUrl.replace('%userid', userid)
+					},
+					url: item.url
+				}
+			}).then(function(resp) {
+				var headers = resp.shift();
+				var body = resp.shift();
+				if (headers.statusCode === 200) {
+					item.body = body;
+				} else item.body = undefined;
+				return item;
+			});
+		});
+	},
+	extractWebtaskTasks: function(arr) {
+		var tasks = [];
+		var child;
+		for (var i=0; i < arr.length; i++) {
+			if (arr[i].verb === 'webtask') tasks.push({index: arr[i].index, url: arr[i].nouns.text, webtask_token: arr[i].webtask_token ? arr[i].webtask_token : undefined});
+			else if (arr[i].verb === 'gather') {
+				scan(arr[i].nested)
+			}
+		}
+
+		function scan(nested) {
+			for (var j=0; j < nested.length; j++) {
+				child = _.find(nested[j].actions, 'verb', 'webtask')
+				if (child) tasks.push({index: child.index, url: child.nouns.text, webtask_token: child.webtask_token ? child.webtask_token : undefined})
+			}
+		};
+
+		return when.resolve(tasks);
+	},
+	updateWebtasksInIvr: function(ivr, tasks) {
+		var index = -1;
+		var item;
+
+		for (var i=0; i < tasks.length; i++) {
+			for (var x=0; x < ivr.actions.length; x++) {
+				if (ivr.actions[x].index === tasks[i].index) ivr.actions[x].webtask_token = tasks[i].body
+				if (ivr.actions[x].verb === 'gather') {
+					for (var j=0; j < ivr.actions[x].nested.length; j++) {
+						if (ivr.actions[x].nested[j].actions[0].index === tasks[i].index) ivr.actions[x].nested[j].actions[0].webtask_token = tasks[i].body
+					}
+				}
+			};
+		}
+		return when.resolve(ivr);
 	},
 	combinePromiseResponses: function(tns, results) {
 		Object.keys(tns).map(function(tn, i) {

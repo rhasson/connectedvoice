@@ -348,11 +348,18 @@ module.exports = helpers = {
 	},
 	deleteIvrRecord: function(ivr_id, userid) {
 		return dbget(ivr_id).then(function(doc) {
-			var body = doc.shift();
-			return dbremove(body._id, body._rev).then(function(doc) {
+			var orig_doc = doc.shift();
+			return dbremove(orig_doc._id, orig_doc._rev).then(function(doc) {
 				var body = doc.shift();
-				if (body.ok === true) return when.resolve({});
-				else when.reject(new Error('Failed to delete IVR record'));
+				if (body.ok === true) {
+					//NOTE: may result in memory leak if the revoke api hangs
+					helpers.extractWebtaskTasks(orig_doc).then(function(tasks) {
+						helpers.revokeWebtaskTokens(tasks).catch(function(err) {
+							console.log('Failed to revoke webtask token - ', err);
+						});
+					});
+					return when.resolve({});
+				} else return when.reject(new Error('Failed to delete IVR record'));
 			})			
 		})
 		.catch(function(err) {
@@ -389,37 +396,37 @@ module.exports = helpers = {
 
 			return helpers.createWebtaskTask(toBeIssued, _id).then(function(tasks) {
 				console.log(tasks)
-				revokeTokens(toBeRevoked).catch(function(err) {
+				helpers.revokeWebtaskTokens(toBeRevoked).catch(function(err) {
 					console.log('Failed to revoke webtask token - ', err);
 				});
 				return helpers.updateWebtasksInIvr(new_ivr, tasks);
 			})
 
 		});
-		//revoke old tokens
-		function revokeTokens(tokens) {
-			if (tokens && tokens typeof String) tokens = [tokens];
-			if (tokens && tokens typeof Array) return when.map(tokens, helpers.revokeWebtaskToken);
-			else return when.resolve();
-		}
 	},
-	revokeWebtaskToken: function(token) {
-		return http({
-			url: config.webtask.revokeToken + '?key=' + config.webtask.key,
-			method: 'POST',
-			json: true,
-			body: {
-				ten: config.webtask.container,
-				token: token
-			}
-		}).then(function(resp) {
-			var headers = resp.shift();
-			if (headers.statusCode === 200) {
-				return when.resolve();
-			} else return when.reject(new Error(headers.statusMessage));
-		}).catch(function(err) {
-			return when.reject(new Error(err));
-		});
+	revokeWebtaskToken: function(tokens) {
+		if (tokens && tokens typeof String) tokens = [tokens];
+		if (tokens && tokens typeof Array) return when.map(tokens, revokeToken);
+		else return when.resolve();
+		
+		function revokeToken(token) {
+			return http({
+				url: config.webtask.revokeToken + '?key=' + config.webtask.key,
+				method: 'POST',
+				json: true,
+				body: {
+					ten: config.webtask.container,
+					token: token
+				}
+			}).then(function(resp) {
+				var headers = resp.shift();
+				if (headers.statusCode === 200) {
+					return when.resolve({});
+				} else return when.reject(new Error(headers.statusMessage));
+			}).catch(function(err) {
+				return when.reject(new Error(err));
+			});
+		}
 	},
 	createWebtaskTask: function(arr, userid) {
 		return when.map(arr, function(item) {

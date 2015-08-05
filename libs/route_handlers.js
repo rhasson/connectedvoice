@@ -277,7 +277,7 @@ module.exports = {
 				error: {
 					id: [ {
 						message: msg,
-						attribute: id
+						attribute: 'id'
 					} ]
 				}
 			})).code(422);
@@ -307,7 +307,7 @@ module.exports = {
 				error: {
 					id: [ {
 						message: msg,
-						attribute: id
+						attribute: 'id'
 					} ]
 				}
 			})).code(422);
@@ -334,7 +334,7 @@ module.exports = {
 				error: {
 					id: [ {
 						message: msg,
-						attribute: id
+						attribute: 'id'
 					} ]
 				}
 			})).code(422);
@@ -360,7 +360,7 @@ module.exports = {
 				error: {
 					id: [ {
 						message: msg,
-						attribute: id
+						attribute: 'id'
 					} ]
 				}
 			})).code(422);

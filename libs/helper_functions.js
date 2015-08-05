@@ -328,9 +328,11 @@ module.exports = helpers = {
 
 				delete body._id;
 				
-				return updateWebtask(ivr, body, userid).then(function(new_ivr) {
-					newdoc = _.merge(body, new_ivr);
-					return dbinsert(newdoc, ivr_id).then(function() {
+				return helpers.updateWebtask(ivr, body, userid).then(function(new_ivr) {
+					new_ivr.type = body.type;
+					new_ivr._rev = body._rev;
+
+					return dbinsert(new_ivr, ivr_id).then(function() {
 						return dbget(ivr_id).then(function(d) {
 							var body = d.shift();
 							var record = helpers.formatIvrRecord([body]);
@@ -373,7 +375,7 @@ module.exports = helpers = {
 			return helpers.createWebtaskTask(resp, _id);
 		}).then(function(tasks) {
 			console.log(tasks)
-			return updateWebtasksInIvr(ivr, tasks);
+			return helpers.updateWebtasksInIvr(ivr, tasks);
 		});
 	},
 	updateWebtask: function(new_ivr, current_ivr, userid){
@@ -385,17 +387,22 @@ module.exports = helpers = {
 			var toBeIssued = [];
 
 			for (var i=0, temp; i < new_arr.length; i++) {
-				temp = _.find(current_arr, {index: new_arr[i].index});
-				if (temp) {
-					if (new_arr[i].url != temp.url) {
-						toBeRevoked.push(temp.webtask_token);
-						toBeIssued.push(new_arr[i]);
-					}
+				temp = _.find(current_arr, {url: new_arr[i].url});
+				if (!temp) toBeIssued.push(new_arr[i]);
+			}
+
+			//if the new ivr has no webtasks but the old ivr does, revoke the old tokens
+			if (new_arr.length === 0) {
+				for (var i=0; i < current_arr.length; i++) {
+					toBeRevoked.push(current_arr[i].webtask_token);
 				}
 			}
 
+		console.log('REVOKED: ', toBeRevoked)
+		console.log('ISSUED: ', toBeIssued)
+
 			return helpers.createWebtaskTask(toBeIssued, _id).then(function(tasks) {
-				console.log(tasks)
+				//console.log("TASKS: ", tasks)
 				helpers.revokeWebtaskTokens(toBeRevoked).catch(function(err) {
 					console.log('Failed to revoke webtask token - ', err);
 				});
@@ -404,7 +411,7 @@ module.exports = helpers = {
 
 		});
 	},
-	revokeWebtaskToken: function(tokens) {
+	revokeWebtaskTokens: function(tokens) {
 		if (tokens && typeof tokens === 'string') tokens = [tokens];
 		if (tokens &&  tokens instanceof Array) return when.map(tokens, revokeToken);
 		else return when.resolve();
@@ -429,8 +436,15 @@ module.exports = helpers = {
 		}
 	},
 	createWebtaskTask: function(arr, userid) {
+
+		/*		
+		return when.resolve([ { index: arr[0].index,
+		    url: 'https://raw.githubusercontent.com/rhasson/connectedvoice/master/webtasks/conference.js',
+		    webtask_token: 'eyJhbGciOiJIUzI1NiIsImtpZCI6IjIifQ.eyJqdGkiOiJmODk3YzM0YmE0ZmE0M2ZhODhiODZiOGRjMDQyNjFiYSIsImlhdCI6MTQzODcwMjcyNSwiY2EiOlsiN2JhOThjNDk2NTU1NDE2M2FkM2ExMzY5OGFkZDQ3NmYiXSwiZGQiOjAsInVybCI6Imh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9yaGFzc29uL2Nvbm5lY3RlZHZvaWNlL21hc3Rlci93ZWJ0YXNrcy9jb25mZXJlbmNlLmpzIiwidGVuIjoid3Qtcmhhc3Nvbi1nbWFpbF9jb20tMCIsInBjdHgiOnsic3RhdHVzVXJsIjoiaHR0cDovL2Nvbm5lY3RlZHZvaWNlLmlvL2FjdGlvbnMvdjAvTWpJMk9EQTBOVFZoTXpRMU56RXhaRE00T0RWak1HUmlPV0l4TWpBek4yUT0vc3RhdHVzIiwiYWN0aW9uVXJsIjoiaHR0cDovL2Nvbm5lY3RlZHZvaWNlLmlvL2FjdGlvbnMvdjAvTWpJMk9EQTBOVFZoTXpRMU56RXhaRE00T0RWak1HUmlPV0l4TWpBek4yUT0vYWN0aW9uIn0sInBiIjoxfQ.Y3FMzi_hoMy9GX2yFAFxcNUWGsWUdYbVxBHNPW47J58' } ])
+		*/
+		
 		return when.map(arr, function(item) {
-			return post({
+			return http({
 				url: config.webtask.issueToken + '?key=' + config.webtask.key,
 				method: 'POST',
 				json: true,
@@ -447,8 +461,8 @@ module.exports = helpers = {
 				var headers = resp.shift();
 				var body = resp.shift();
 				if (headers.statusCode === 200) {
-					item.body = body;
-				} else item.body = undefined;
+					item.webtask_token = body;
+				} else item.webtask_token = undefined;
 				return item;
 			});
 		});
@@ -466,6 +480,7 @@ module.exports = helpers = {
 		function scan(nested) {
 			for (var j=0; j < nested.length; j++) {
 				child = _.find(nested[j].actions, 'verb', 'webtask')
+				console.log('EXTRACT - CHILD: ', child)
 				if (child) tasks.push({index: child.index, url: child.nouns.text, webtask_token: child.webtask_token ? child.webtask_token : undefined})
 			}
 		};
@@ -478,14 +493,24 @@ module.exports = helpers = {
 
 		for (var i=0; i < tasks.length; i++) {
 			for (var x=0; x < ivr.actions.length; x++) {
-				if (ivr.actions[x].index === tasks[i].index) ivr.actions[x].webtask_token = tasks[i].body
+				if (ivr.actions[x].index === tasks[i].index) ivr.actions[x].webtask_token = tasks[i].webtask_token
 				if (ivr.actions[x].verb === 'gather') {
 					for (var j=0; j < ivr.actions[x].nested.length; j++) {
-						if (ivr.actions[x].nested[j].actions[0].index === tasks[i].index) ivr.actions[x].nested[j].actions[0].webtask_token = tasks[i].body
-					}
+						//console.log('inner loop: ', ivr.actions[x].nested[j].actions[0].index, ' - ', tasks[i])
+						if (ivr.actions[x].nested[j].actions[0].index === tasks[i].index) {
+							//console.log('inside if: ', tasks[i].webtask_token)
+							ivr.actions[x].nested[j].actions[0].webtask_token = tasks[i].webtask_token
+							//console.log('inside if - after: ', ivr.actions[x].nested[j].actions[0])
+						}
+					};
 				}
 			};
 		}
+
+
+		//console.log('UPDATE - IVR: ', ivr.actions[1].nested[0].actions)
+		//console.log('UPDATE - tasks: ', tasks)
+
 		return when.resolve(ivr);
 	},
 	combinePromiseResponses: function(tns, results) {

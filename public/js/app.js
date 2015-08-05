@@ -612,7 +612,7 @@ App.PhoneNumbersComponent = Ember.Component.extend({
 		* obj: class object
 		*/
 		selectChangeAction: function(prev, value, obj) {
-			console.log('Select Changed: ', prev, ' to ', value)
+			//console.log('Select Changed: ', prev, ' to ', value)
 			var el = '#' + obj.get('elementId');
 			if (prev === value) {
 				$(el).parent().next().children('span.glyphicon-ok-circle').removeClass('green').addClass('gray');
@@ -864,7 +864,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			})
 			.catch(function(err) {
 				console.log('err: ', err)
-				self.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
+				this.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
 				toggleMessageSlide();
 			});
 		},
@@ -1222,15 +1222,22 @@ function serializeIvr(views) {
 			continue;
 		}
 
-		if ('parent_id' in view) {
+		if ('parent_id' in view) {  //this is the top level verb where actions will be nested
 			p_id = view.parent_id;
 			addToArray(nested, model, {parent_id: view.parent_id, actions: actions});
 			actions = [];
 			a_id = undefined;
-		} else if (p_id && p_id === model.get('index')) {
+		} else if (p_id && p_id === model.get('index')) {   //this is the actual parent
 			addToArray(verbs, model, {nested: nested});
 			nested = [];
 			p_id = undefined;
+		} else if (!p_id && a_id) {
+			for (var j=0; j < actions.length; j++) {
+				verbs.unshift(actions[j]);
+			}
+			addToArray(verbs, model);
+			a_id = undefined;
+			actions = [];
 		} else {
 			addToArray(verbs, model);
 		}
@@ -1252,11 +1259,15 @@ function serializeIvr(views) {
 		if (!Object.keys(obj).length) return undefined;
 
 		for (var i in obj) {
-			if (obj.hasOwnProperty(i) && typeof obj[i] !== 'function') temp[i] = obj[i].trim();
+			if (obj.hasOwnProperty(i) && typeof obj[i] !== 'function') {
+				if (typeof obj[i] === 'string') obj[i].trim();
+				temp[i] = obj[i];
+			}
 		}
 
 		return temp;
 	}
 
+console.log('FINAL: ', verbs)
 	return verbs;
 }

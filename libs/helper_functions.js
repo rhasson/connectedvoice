@@ -22,7 +22,7 @@ var dbinsert = whennode.lift(db.insert),
 	dbsearch = whennode.lift(db.search),
 	dbget = whennode.lift(db.get),
 	dbfetch = whennode.lift(db.fetch),
-	dbremove = whennode.lift(db.destroy);
+	dbremove = whennode.lift(db.destroy),
 	http = whennode.lift(request);
 
 module.exports = helpers = {

@@ -864,7 +864,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			})
 			.catch(function(err) {
 				console.log('err: ', err)
-				this.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
+				self.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
 				toggleMessageSlide();
 			});
 		},

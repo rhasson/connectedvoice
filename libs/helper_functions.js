@@ -327,7 +327,7 @@ module.exports = helpers = {
 				var newdoc;
 
 				delete body._id;
-				
+
 				return helpers.updateWebtask(ivr, body, userid).then(function(new_ivr) {
 					new_ivr.type = body.type;
 					new_ivr._rev = body._rev;
@@ -336,7 +336,6 @@ module.exports = helpers = {
 						return dbget(ivr_id).then(function(d) {
 							var body = d.shift();
 							var record = helpers.formatIvrRecord([body]);
-
 							return when.resolve({ivr: record});
 						});
 					}).catch(function(err) {
@@ -380,15 +379,19 @@ module.exports = helpers = {
 	},
 	updateWebtask: function(new_ivr, current_ivr, userid){
 		var _id = new Buffer(userid, 'utf8').toString('base64');
+
 		return when.map([new_ivr.actions, current_ivr.actions], helpers.extractWebtaskTasks).then(function(data) {
-			var new_arr = data.shift();
-			var current_arr = data.shift();
+			var new_arr, current_arr;
 			var toBeRevoked = [];
 			var toBeIssued = [];
 
+			new_arr = data.shift();
+			current_arr = data.shift();
+
 			for (var i=0, temp; i < new_arr.length; i++) {
 				temp = _.find(current_arr, {url: new_arr[i].url});
-				if (!temp) toBeIssued.push(new_arr[i]);
+				if (temp && temp.webtask_token) toBeRevoked.push(temp.webtask_token);
+				toBeIssued.push(new_arr[i]);
 			}
 
 			//if the new ivr has no webtasks but the old ivr does, revoke the old tokens
@@ -470,9 +473,11 @@ module.exports = helpers = {
 	extractWebtaskTasks: function(arr) {
 		var tasks = [];
 		var child;
+
+		//console.log('EXTRACT ARR: ', arr)
 		for (var i=0; i < arr.length; i++) {
 			if (arr[i].verb === 'webtask') tasks.push({index: arr[i].index, url: arr[i].nouns.text, webtask_token: arr[i].webtask_token ? arr[i].webtask_token : undefined});
-			else if (arr[i].verb === 'gather') {
+			else if (arr[i].verb === 'gather' && 'nested' in arr[i]) {
 				scan(arr[i].nested)
 			}
 		}
@@ -480,7 +485,7 @@ module.exports = helpers = {
 		function scan(nested) {
 			for (var j=0; j < nested.length; j++) {
 				child = _.find(nested[j].actions, 'verb', 'webtask')
-				console.log('EXTRACT - CHILD: ', child)
+				//console.log('EXTRACT - CHILD: ', child)
 				if (child) tasks.push({index: child.index, url: child.nouns.text, webtask_token: child.webtask_token ? child.webtask_token : undefined})
 			}
 		};

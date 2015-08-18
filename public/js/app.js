@@ -861,9 +861,8 @@ App.CreateIvrRoute = Ember.Route.extend({
 			ivr.save().then(function() {			
 				//After model was saved successfully clear up IVR creation variables and redirect to ivr.index
 				self.send('cancelIvrAction');
-			})
-			.catch(function(err) {
-				console.log('err: ', err)
+			}, function(err) {
+				console.log('err: ', err, self)
 				self.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
 				toggleMessageSlide();
 			});

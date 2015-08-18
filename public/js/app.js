@@ -1068,6 +1068,37 @@ App.XModalComponent = Ember.Component.extend({
 
 /*********************************************************************/
 
+/* Graph Component */
+
+App.XGraphComponent = Ember.Component.extend({
+	canvasId: undefined,
+	canvasW: undefined,
+	canvasH: undefined,
+	chartType: undefined,
+	ctx: undefined,
+	chart: undefined,
+	init: function() {
+		this._super.apply(this, arguments);
+
+		this.ctx = this.$('#' + this.canvasId).get(0).getContext('2d');
+	},
+	didInsertElement: function() {
+		switch (this.chartType.toLowerCase()) {
+			case 'pie':
+				this.chart = new Chart(this.ctx).Pie(this.model);
+		}
+	},
+	actions: {
+		refresh: function() {
+			var self = this;
+			this.sendAction('refresh', function(data) {
+				self.chart.addData(data);
+			});
+		}
+	}
+});
+
+/*********************************************************************/
 /* Custom Select element */
 
 App.SelectsView = Ember.Select.extend({

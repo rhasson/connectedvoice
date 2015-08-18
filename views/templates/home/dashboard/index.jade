@@ -1,2 +1,5 @@
 script(type="text/x-handlebars", data-template-name="dashboard")
-  <p>Welcome to your dashboard {{model.first_name}}</p>
+  div.row
+    div.col-md-12
+    <p>Welcome to your dashboard {{model.first_name}}</p>
+    {{x-graph model=model action="takeAction" canvasId="totalCalls" canvasW="200" canvasH="200" chartType="pie"}}

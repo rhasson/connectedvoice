@@ -1,0 +1,4 @@
+script(type="text/x-handlebars", data-template-name="call-stats-graph")
+  {{#x-graph ok="removeIvrAction" model=model}}
+  <canvas id="{{model.canvasId}}" width="{{model.canvasW}}" height="{{model.canvasH}}"></canvas>
+  {{/x-graph}}

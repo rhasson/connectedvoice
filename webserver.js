@@ -95,6 +95,13 @@ server.route([
 	{ method: 'DELETE', path: '/api/v0/ivr/{id}', handler: handlers.deleteIvr }
 ]);
 
+/*
+* Call Statistics
+*/
+server.route([
+	{ method: 'GET', path: '/api/v0/call_stat', handler: handlers.getCallStats },
+	{ method: 'GET', path: '/api/v0/call_stat/{tns}', handler: handlers.getCallStatsByTns }
+]);
 
 server.start(function() {
 	console.log('Server started!')

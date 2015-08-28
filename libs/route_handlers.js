@@ -365,5 +365,36 @@ module.exports = {
 				}
 			})).code(422);
 		});
+	},
+	getCallStats: function(request, reply) {
+		//get all call stats by ID
+		var _id;
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			return helpers.getCallStatusById(_id);
+		})
+		.then(function(data) {
+			reply(data);
+		})
+		.catch(function(err) {
+			var msg;
+			console.log('getCallStatusById error: ', err);
+
+			if ('status' in err) {
+				msg = "Cannot complete your request at this time: "+err.code;
+			} else msg = err.toString();
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: 'id'
+					} ]
+				}
+			})).code(422);
+		});
+	},
+	getCallStatsByTns: function(request, reply) {
+		//https://familyengage.cloudant.com/voiceassist/_design/callByType/_search/callByType?q=type:%22call_status%22%20AND%20from:(%22+15082723213%22%20OR%20%22+15087615839%22)&counts=[%22from%22]
+		//get call stats by for a specific TN
 	}
 }

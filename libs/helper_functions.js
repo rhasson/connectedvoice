@@ -518,6 +518,22 @@ module.exports = helpers = {
 
 		return when.resolve(ivr);
 	},
+	getCallStatusById: function(userid) {
+		return dbsearch('callByType', 'callByType', {
+			q: 'type:"call_status" AND id:"' + userid + '"',
+			counts: '["from"]',
+			limit: 10
+		}).then(function(doc) {
+			var body = doc.shift();
+			var headers = doc.shift();
+			var data = helpers.convertDocToChartData(body);
+			
+			return when.resolve({CallStats: [{
+				contents: data,
+				id: body.bookmark
+			}]});
+		});
+	},
 	combinePromiseResponses: function(tns, results) {
 		Object.keys(tns).map(function(tn, i) {
 			body = (results[i].state === 'rejected') ? results[i].reason : results[i].value;
@@ -624,5 +640,88 @@ module.exports = helpers = {
 		}
 
 		return newdoc;
+	},
+	convertDocToChartData: function(body) {
+		var colors;
+		var count = -1;
+
+		if (!('counts' in body) || body.rows.length === 0) return contents;
+
+		colors = helpers.getRandomColor(Object.keys(body.counts.from).length);
+
+		ret = _.map(body.counts.from, function(value, key) {
+			++count;
+			return {
+				value: value,
+				color: colors[count],
+				highlight: colors[count],
+				label: key
+			}
+		});
+
+		return ret;
+	},
+	getRandomColor: function(count) {
+		var Colors = {};
+		Colors.names = {
+		    //aqua: "#00ffff",
+		    //azure: "#f0ffff",
+		    //beige: "#f5f5dc",
+		    black: "#000000",
+		    blue: "#0000ff",
+		    brown: "#a52a2a",
+		    cyan: "#00ffff",
+		    darkblue: "#00008b",
+		    darkcyan: "#008b8b",
+		    darkgrey: "#a9a9a9",
+		    darkgreen: "#006400",
+		    darkkhaki: "#bdb76b",
+		    darkmagenta: "#8b008b",
+		    darkolivegreen: "#556b2f",
+		    darkorange: "#ff8c00",
+		    darkorchid: "#9932cc",
+		    darkred: "#8b0000",
+		    darksalmon: "#e9967a",
+		    darkviolet: "#9400d3",
+		    fuchsia: "#ff00ff",
+		    gold: "#ffd700",
+		    green: "#008000",
+		    indigo: "#4b0082",
+		    khaki: "#f0e68c",
+		    lightblue: "#add8e6",
+		    lightcyan: "#e0ffff",
+		    lightgreen: "#90ee90",
+		    lightgrey: "#d3d3d3",
+		    lightpink: "#ffb6c1",
+		    lightyellow: "#ffffe0",
+		    lime: "#00ff00",
+		    magenta: "#ff00ff",
+		    maroon: "#800000",
+		    navy: "#000080",
+		    olive: "#808000",
+		    orange: "#ffa500",
+		    pink: "#ffc0cb",
+		    purple: "#800080",
+		    violet: "#800080",
+		    red: "#ff0000",
+		    silver: "#c0c0c0",
+		    white: "#ffffff",
+		    yellow: "#ffff00"
+		};
+		Colors.getRandom = function() {
+			var result;
+			var count = 0;
+			for (var i in this.names) {
+				if (Math.random() < 1/++count) result = i;
+			}
+			return this.names[result];
+		}
+
+		Colors.getByCount = function(count) {
+			return _.take(_.values(this.names), count);
+		}
+
+		if (count) return Colors.getByCount(count);
+		else return Colors.getRandom();
 	}
 }

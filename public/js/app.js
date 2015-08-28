@@ -196,6 +196,10 @@ App.Ivrwebtask = DS.Model.extend({
 	}
 });
 
+App.CallStat = DS.Model.extend({
+	contents: DS.attr()
+});
+
 /*********************************************************************/
 
 /* Application router definition */
@@ -540,7 +544,7 @@ App.HomeController = Ember.Controller.extend(Ember.Evented, {
 * The HOME template contains a dynamic component helper {{component getCompType model=model action="takeAction"}}
 * The 'action' parameter is used to call into the parent controller
 * Each individual component inside the HOME template will have it's own actions to handle UI.  If they need to call into the controller they
-* will need to use this.sendAction('action', param1, param2...).  Where 'action' is a keyward that references the 'takeAction'
+* will need to use this.sendAction('action', param1, param2...).  Where 'action' is a keyword that references the 'takeAction'
 * method on the controller.
 */
 
@@ -549,9 +553,48 @@ App.HomeController = Ember.Controller.extend(Ember.Evented, {
 App.DashboardRoute = Ember.Route.extend({
 	needs: ['session'],
 	model: function() {
-		var id = this.controllerFor('session').getSession();
-		return this.store.find('account', id);
+		//var id = this.controllerFor('session').getSession();
+		//return this.store.find('account', id);
+		return this.store.find('callStat');
+	},
+	setupController: function(controller, model) {
+		controller.set('model', model.content[0]);
+	},
+	renderTemplate: function() {
+		var data = this.controller.get('model');//.get('content')[0];
+		var canvas_id = data.get('id').slice(-10);
+		var contents = data.get('contents');
+		var canvas_h = '400';
+		var canvas_w = '400';
+
+		this.render('dashboard', {
+			//into: 'home',
+			//outlet: 'call_stats',
+			model: {
+				canvasId: canvas_id,
+				canvasW: canvas_w,
+				canvasH: canvas_h,
+				contents: contents,
+				chartType: 'pie'
+			}
+		});
+
+		this.render('call-stats-graph', {
+			into: 'dashboard',
+			outlet: 'call_stats',
+			model: {
+				canvasId: canvas_id,
+				canvasW: canvas_w,
+				canvasH: canvas_h,
+				contents: contents,
+				chartType: 'pie'
+			}
+		});
 	}
+});
+
+App.DashboardController = Ember.Controller.extend({
+	//
 });
 
 /*********************************************************************/
@@ -1071,21 +1114,15 @@ App.XModalComponent = Ember.Component.extend({
 /* Graph Component */
 
 App.XGraphComponent = Ember.Component.extend({
-	canvasId: undefined,
-	canvasW: undefined,
-	canvasH: undefined,
-	chartType: undefined,
 	ctx: undefined,
 	chart: undefined,
-	init: function() {
-		this._super.apply(this, arguments);
-
-		this.ctx = this.$('#' + this.canvasId).get(0).getContext('2d');
-	},
+	classNames: ['center-div'],
 	didInsertElement: function() {
-		switch (this.chartType.toLowerCase()) {
+		var model = this.get('model');
+		this.ctx = this.$('#' + model.canvasId).get(0).getContext('2d');
+		switch (model.chartType.toLowerCase()) {
 			case 'pie':
-				this.chart = new Chart(this.ctx).Pie(this.model);
+				this.chart = new Chart(this.ctx).Pie(model.contents);
 		}
 	},
 	actions: {

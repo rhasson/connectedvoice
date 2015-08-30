@@ -99,8 +99,16 @@ server.route([
 * Call Statistics
 */
 server.route([
-	{ method: 'GET', path: '/api/v0/call_stat', handler: handlers.getCallStats },
-	{ method: 'GET', path: '/api/v0/call_stat/{tns}', handler: handlers.getCallStatsByTns }
+	{ method: 'GET', path: '/api/v0/call_stat/{id}', handler: handlers.getCallStats },
+	{ method: 'GET', path: '/api/v0/call_stat/{id}/{tns}', handler: handlers.getCallStatsByTns }
+]);
+
+/*
+* Sms Statistics
+*/
+server.route([
+	{ method: 'GET', path: '/api/v0/sms_stat/{id}', handler: handlers.getSmsStats },
+	{ method: 'GET', path: '/api/v0/sms_stat/{id}/{tns}', handler: handlers.getSmsStatsByTns }
 ]);
 
 server.start(function() {

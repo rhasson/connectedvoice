@@ -1,5 +1,6 @@
 script(type="text/x-handlebars", data-template-name="dashboard")
   div.row
     div.col-md-6
-      p.text-center Top 10 Callers
       {{outlet 'call_stats'}}
+    div.col-md-6
+      {{outlet 'sms_stats'}}

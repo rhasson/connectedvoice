@@ -1,5 +1,5 @@
-script(type="text/x-handlebars", data-template-name="call-stats-graph")
+script(type="text/x-handlebars", data-template-name="sms-stats-graph")
   {{#x-graph refresh="refreshAction" model=model}}
-  p.text-center Top 10 Callers
+  p.text-center Top 10 SMSers
   <canvas id="{{model.canvasId}}" width="{{model.canvasW}}" height="{{model.canvasH}}"></canvas>
   {{/x-graph}}

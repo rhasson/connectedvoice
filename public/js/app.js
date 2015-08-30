@@ -200,6 +200,10 @@ App.CallStat = DS.Model.extend({
 	contents: DS.attr()
 });
 
+App.SmsStat = DS.Model.extend({
+	contents: DS.attr()
+});
+
 /*********************************************************************/
 
 /* Application router definition */
@@ -551,52 +555,68 @@ App.HomeController = Ember.Controller.extend(Ember.Evented, {
 /********************** DASHBOARD **********************************/
 
 App.DashboardRoute = Ember.Route.extend({
-	needs: ['session'],
+	needs: ['session', 'application'],
+	beforeModel: function() {
+		var session = this.controllerFor('session');
+		if (!session.isSessionPresent()) this.transitionTo('/');
+	},
 	model: function() {
-		//var id = this.controllerFor('session').getSession();
-		//return this.store.find('account', id);
-		return this.store.find('callStat');
+		var self = this;
+		var session = this.controllerFor('session');
+		var id = session.getSession();
+		
+		return Ember.RSVP.hash({
+			call_stats: self.store.find('callStat', id),  //change find to fetch in order to always grab from API
+			sms_stats: self.store.find('smsStat', id)
+		});
 	},
 	setupController: function(controller, model) {
-		controller.set('model', model.content[0]);
-	},
-	renderTemplate: function() {
-		var data = this.controller.get('model');//.get('content')[0];
-		var canvas_id = data.get('id').slice(-10);
-		var contents = data.get('contents');
-		var canvas_h = '400';
-		var canvas_w = '400';
+		var canvas_h = '300';
+		var canvas_w = '300';
+		var chartType = 'pie';
 
-		this.render('dashboard', {
-			//into: 'home',
-			//outlet: 'call_stats',
-			model: {
-				canvasId: canvas_id,
-				canvasW: canvas_w,
-				canvasH: canvas_h,
-				contents: contents,
-				chartType: 'pie'
-			}
-		});
+		var call = model.call_stats;
+		var sms = model.sms_stats;
+
+		call.set('canvasId', call.get('id').slice(-10));
+		call.set('canvasW', canvas_w);
+		call.set('canvasH', canvas_h);
+		call.set('chartType', chartType);
+
+		sms.set('canvasId', sms.get('id').slice(-10));
+		sms.set('canvasW', canvas_w);
+		sms.set('canvasH', canvas_h);
+		sms.set('chartType', chartType);
+
+		this.controllerFor('call-stats').set('model', call);
+		this.controllerFor('sms-stats').set('model', sms);
+	},
+	renderTemplate: function(controller, model) {
+		this.render('dashboard');
 
 		this.render('call-stats-graph', {
 			into: 'dashboard',
 			outlet: 'call_stats',
-			model: {
-				canvasId: canvas_id,
-				canvasW: canvas_w,
-				canvasH: canvas_h,
-				contents: contents,
-				chartType: 'pie'
-			}
+			controller: 'call-stats'
+		});
+
+		this.render('sms-stats-graph', {
+			into: 'dashboard',
+			outlet: 'sms_stats',
+			controller: 'sms-stats'
 		});
 	}
 });
 
 App.DashboardController = Ember.Controller.extend({
-	//
+	needs: ['call-stats', 'sms-stats']
 });
-
+App.CallStatsController = Ember.Controller.extend({
+	//needed for model isolation
+});
+App.SmsStatsController = Ember.Controller.extend({
+	//needed for model isolation
+});
 /*********************************************************************/
 
 /********************** CONFIGURATIONS **********************************/
@@ -1119,10 +1139,11 @@ App.XGraphComponent = Ember.Component.extend({
 	classNames: ['center-div'],
 	didInsertElement: function() {
 		var model = this.get('model');
+
 		this.ctx = this.$('#' + model.canvasId).get(0).getContext('2d');
 		switch (model.chartType.toLowerCase()) {
 			case 'pie':
-				this.chart = new Chart(this.ctx).Pie(model.contents);
+				this.chart = new Chart(this.ctx).Pie(model.get('contents'));
 		}
 	},
 	actions: {

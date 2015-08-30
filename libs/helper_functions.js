@@ -528,10 +528,26 @@ module.exports = helpers = {
 			var headers = doc.shift();
 			var data = helpers.convertDocToChartData(body);
 			
-			return when.resolve({CallStats: [{
+			return when.resolve({CallStats: {
 				contents: data,
 				id: body.bookmark
-			}]});
+			}});
+		});
+	},
+	getSmsStatusById: function(userid) {
+		return dbsearch('callByType', 'callByType', {
+			q: 'type:"sms_status" AND id:"' + userid + '"',
+			counts: '["from"]',
+			limit: 10
+		}).then(function(doc) {
+			var body = doc.shift();
+			var headers = doc.shift();
+			var data = helpers.convertDocToChartData(body);
+			
+			return when.resolve({SmsStats: {
+				contents: data,
+				id: body.bookmark
+			}});
 		});
 	},
 	combinePromiseResponses: function(tns, results) {

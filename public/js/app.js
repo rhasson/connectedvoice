@@ -229,6 +229,12 @@ App.Router.map(function() {
 			});
 			this.route('remove', {path: '/:account_id/:ivr_id'});
 		});
+		this.resource('groups', {path: '/groups/:account_id'}, function() {
+			this.route('index');
+			this.route('create');
+			this.route('edit', {path: '/groups/:account_id/:group_id'});
+			this.route('remove', {path: '/groups/:account_id/:group_id'});
+		})
 		this.resource('dashboard');
 		this.resource('analytics');
 		this.resource('campaigns');
@@ -1110,7 +1116,61 @@ App.CreateIvrView = Ember.View.extend({
 		}
 	}
 });
+/*********************************************************************/
 
+/********************** GROUPS ***************************************/
+App.GroupsIndexRoute = Ember.Route.extend({
+	model: function(params) {
+		return this.store.all('groups', params.account_id);
+	},
+	setupController: function(controller, model) {
+		controller.set('model', model);
+	}
+});
+
+App.GroupsCreateRoute = Ember.Route.extend({
+	model: function(params) {
+		if (Ember.keys(params).length === 0 || params.group_id === '0') return Ember.Object.create();
+		return this.store.find('groups', params.group_id);
+	},
+	setupController: function(controller, model) {
+		controller.set('model', model);
+	}
+});
+
+App.GroupsEditRoute = Ember.Route.extend({
+	model: function(params) {
+		return this.store.find('groups', params.group_id);
+	},
+	setupController: function(controller, model) {
+		controller.set('model', model);
+	}
+});
+
+App.GroupsRemoveRoute = Ember.Route.extend({
+	model: function(params) {
+		return params.group_id;
+	},
+	setupController: function(controller, model) {
+		controller.set('model', model);
+	},
+	actions: {
+		removeGroup: function() {
+			var group = this.store.find('groups', this.controller.get('model'))
+			group.deleteRecord();
+			group.save().then(function(resp) {
+					//this.refresh();
+					//console.log(self.container.lookup('view:configuration'));
+			})
+			.catch(function(err) {
+				console.log('err: ', err)
+				self.get('controller').set('notify_message', 'Failed to remove group to server.  Please try again later');
+				toggleMessageSlide();
+			});
+		}
+	}
+
+});
 /*********************************************************************/
 
 /* Modal Component */

@@ -40,6 +40,17 @@ App.Ivr = DS.Model.extend({
 	actions: DS.attr()
 });
 
+App.Groups = DS.Model.extend({
+	account_id: DS.belongsTo('account'),
+	name: DS.attr('string'),
+	date_updated: DS.attr('date'),
+	members: DS.attr(),
+	init: function() {
+		this._super.apply(this, arguments);
+		this.members = [];
+	}
+});
+
 App.Error = DS.Model.extend({
 	status: DS.attr('number'),
 	reason: DS.attr('text')
@@ -232,9 +243,8 @@ App.Router.map(function() {
 		this.resource('groups', {path: '/groups/:account_id'}, function() {
 			this.route('index');
 			this.route('create');
-			this.route('edit', {path: '/groups/:account_id/:group_id'});
-			this.route('remove', {path: '/groups/:account_id/:group_id'});
-		})
+			this.route('edit', {path: '/:group_id'});
+		});
 		this.resource('dashboard');
 		this.resource('analytics');
 		this.resource('campaigns');
@@ -293,6 +303,7 @@ App.SessionController = Ember.Controller.extend({
 		this.store.unloadAll('account');
 		this.store.unloadAll('number');
 		this.store.unloadAll('ivr');
+		this.store.unloadAll('groups');
 		this.set('isLoggedIn', this.isSessionPresent());
 	},
 	isSessionPresent: function() {
@@ -365,6 +376,14 @@ App.ApplicationRoute = Ember.Route.extend({
 					self.get('controller').set('notify_message', 'Failed to save changes to server.  Please try again later');
 					toggleMessageSlide();
 				});
+		},
+		removeMemberAction: function(params) {
+			var group = this.store.all('groups').findBy('name', params.group_name);
+			group.get('members').removeObject(params.member);
+		},
+		notifyMessage: function(msg) {
+			this.controller.set('notify_message', msg);
+			toggleMessageSlide();
 		}
 	}
 });
@@ -383,10 +402,6 @@ App.ApplicationController = Ember.Controller.extend({
 		redirectOnLogout: function() {
 			this.get("controllers.session").clearSession();
 			this.transitionToRoute('/');
-		},
-		notifyMessage: function(msg) {
-			this.set('notify_message', msg);
-			toggleMessageSlide();
 		}
 	}
 });
@@ -881,7 +896,7 @@ App.IvrIndexRoute = Ember.Route.extend({
 	},
 	actions: {
 		removeIvrAction: function(ivr) {
-			ivr.destroyRecord();
+			ivr.deleteRecord();
 		}
 	}
 });
@@ -1121,7 +1136,7 @@ App.CreateIvrView = Ember.View.extend({
 /********************** GROUPS ***************************************/
 App.GroupsIndexRoute = Ember.Route.extend({
 	model: function(params) {
-		return this.store.all('groups', params.account_id);
+		return this.store.all('groups');
 	},
 	setupController: function(controller, model) {
 		controller.set('model', model);
@@ -1129,13 +1144,35 @@ App.GroupsIndexRoute = Ember.Route.extend({
 });
 
 App.GroupsCreateRoute = Ember.Route.extend({
+	beforeModel: function() {
+		var temp = this.store.all('groups').findBy('name', undefined);
+		if (temp) temp.deleteRecord();
+	},
 	model: function(params) {
-		if (Ember.keys(params).length === 0 || params.group_id === '0') return Ember.Object.create();
-		return this.store.find('groups', params.group_id);
+		if (Ember.keys(params).length === 0 || params.group_id === '0') return this.store.createRecord('groups');  //return Ember.Object.create();
+		else this.transitionTo('groups/index');
 	},
 	setupController: function(controller, model) {
 		controller.set('model', model);
+	},
+	actions: {
+		addMember: function(member) {
+			var model = this.controller.get('model');
+			var members = model.get('members');
+			this.controller.get('model').get('members').pushObject(member);
+		}
 	}
+});
+
+App.GroupsCreateController = Ember.Controller.extend({
+	sortOrder: ['priority'],
+	members: Ember.computed('members', function() {
+		return this.get('model').get('members');
+	}),
+	sortedMembers: Ember.computed.sort('members', 'sortOrder'),
+	group_name: Ember.computed('groupName', function() {
+		return this.get('model').get('name');
+	})
 });
 
 App.GroupsEditRoute = Ember.Route.extend({
@@ -1169,7 +1206,27 @@ App.GroupsRemoveRoute = Ember.Route.extend({
 			});
 		}
 	}
+});
 
+App.GroupMembersComponent = Ember.Component.extend({
+	current: Ember.Object.create(),
+	actions: {
+		showModal: function(name, group_name, member) {
+			this.sendAction('action', 'showModal', {name: name, model: {group_name: group_name, member: member}});
+		},
+		hideModal: function() {
+			this.sendAction('action', 'hideModal');
+		},
+		addMemberAction: function(member) {
+			var temp = __getOwnData(member);
+			this.sendAction('addMemberAction', temp);
+			this.current.setProperties({
+				phone_number: '',
+				name: '',
+				priority: ''
+			});
+		}
+	}
 });
 /*********************************************************************/
 
@@ -1394,28 +1451,28 @@ function serializeIvr(views) {
 			var obj = {
 				index: m.get('index'),
 				verb: m.get('verb'),
-				nouns: getOwnData(m.get('nouns')),
-				verb_attributes: getOwnData(m.get('verb_attributes'))
+				nouns: __getOwnData(m.get('nouns')),
+				verb_attributes: __getOwnData(m.get('verb_attributes'))
 			}
 			if (mixin) Ember.mixin(obj, mixin);
-			arr.unshift(getOwnData(obj));
+			arr.unshift(__getOwnData(obj));
 		}
-	}
-
-	function getOwnData(obj) {
-		var temp = {};
-		if (!Object.keys(obj).length) return undefined;
-
-		for (var i in obj) {
-			if (obj.hasOwnProperty(i) && typeof obj[i] !== 'function') {
-				if (typeof obj[i] === 'string') obj[i].trim();
-				temp[i] = obj[i];
-			}
-		}
-
-		return temp;
 	}
 
 console.log('FINAL: ', verbs)
 	return verbs;
+}
+
+function __getOwnData(obj) {
+	var temp = {};
+	if (!Object.keys(obj).length) return undefined;
+
+	for (var i in obj) {
+		if (obj.hasOwnProperty(i) && typeof obj[i] !== 'function') {
+			if (typeof obj[i] === 'string') obj[i].trim();
+			temp[i] = obj[i];
+		}
+	}
+
+	return temp;
 }

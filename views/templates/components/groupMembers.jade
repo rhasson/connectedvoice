@@ -1,0 +1,25 @@
+script(type="text/x-handlebars", data-template-name="components/group-members")
+  table.table.table-hover
+    thead
+      th Phone Number
+      th User Name
+      th Priority
+      th Actions
+    <tbody>
+    <tr>
+    <td>{{input class="va-ivr-lg-num" type="text" placeholder="User's phone number" value=current.phone_number}}</td>
+    <td>{{input class="va-ivr-lg-num" type="text" placeholder="User's name" value=current.name}}</td>
+    <td>{{input class="va-ivr-sm-num" type="text" value=current.priority}}</td>
+    <td><span class="glyphicon glyphicon-ok-circle green" {{action "addMemberAction" current}}></span></td>
+    </tr>
+    {{#each model as |member|}}
+    <tr>
+    <td>{{member.phone_number}}</td>
+    <td>{{member.name}}</td>
+    <td>{{member.priority}}</td>
+    <td>
+    <span class="glyphicon glyphicon-remove-circle red" {{action "showModal" "remove-member-modal" groupName member}}></span>
+    </td>
+    </tr>
+    {{/each}}
+    </tbody>

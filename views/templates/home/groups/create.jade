@@ -1,0 +1,7 @@
+script(type="text/x-handlebars", data-template-name="groups/create")
+  div.row
+    div.col-md-9
+      p#helper-message Group name: {{input class="va-ivr-lg-num" type="text" value=model.name}}
+  div.row
+    div.col-md-9
+      {{group-members model=sortedMembers action="takeAction" addMemberAction="addMember" groupName=model.name}}

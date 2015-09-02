@@ -1,0 +1,4 @@
+script(type="text/x-handlebars", data-template-name="remove-member-modal")
+  {{#x-modal title="Remove User" ok="removeMemberAction" close="hideModal" data=model}}
+  <p>You are trying to remove <b>{{model.member.name}}</b> from the group, are you sure?</p>
+  {{/x-modal}}

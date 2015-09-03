@@ -5,3 +5,7 @@ script(type="text/x-handlebars", data-template-name="groups/create")
   div.row
     div.col-md-9
       {{group-members model=sortedMembers action="takeAction" addMemberAction="addMember" groupName=model.name}}
+  div.row
+    div.col-md-9
+      <button type="button" class="btn btn-default pull-right" {{action "cancelSaveGroupAction"}}>Cancel</button>
+      <button type="button" class="btn btn-primary pull-right" {{action "saveGroupAction"}}>Finish</button>

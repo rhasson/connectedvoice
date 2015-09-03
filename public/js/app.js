@@ -942,7 +942,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			
 			//console.log('FINAL IVR: ', ivr.toJSON());
 
-			ivr.save().then(function() {			
+			ivr.save().then(function() {
 				//After model was saved successfully clear up IVR creation variables and redirect to ivr.index
 				self.send('cancelIvrAction');
 			}, function(err) {
@@ -1144,15 +1144,19 @@ App.GroupsIndexRoute = Ember.Route.extend({
 });
 
 App.GroupsCreateRoute = Ember.Route.extend({
-	beforeModel: function() {
+	needs: ['application'],
+	beforeModel: function(transition) {
 		var temp = this.store.all('groups').findBy('name', undefined);
 		if (temp) temp.deleteRecord();
+
+		this.set('_account', this.store.find('account', transition.params.groups.account_id));
 	},
 	model: function(params) {
 		if (Ember.keys(params).length === 0 || params.group_id === '0') return this.store.createRecord('groups');  //return Ember.Object.create();
-		else this.transitionTo('groups/index');
+		else this.transitionTo('groups.index');
 	},
 	setupController: function(controller, model) {
+		model.set('account_id', this.get('_account'));
 		controller.set('model', model);
 	},
 	actions: {
@@ -1160,6 +1164,27 @@ App.GroupsCreateRoute = Ember.Route.extend({
 			var model = this.controller.get('model');
 			var members = model.get('members');
 			this.controller.get('model').get('members').pushObject(member);
+		},
+		saveGroupAction: function() {
+			var self = this;
+			var group = this.controller.get('model');
+
+			group.set('date_updated', new Date());
+
+			group.save().then(function() {
+				this.transitionTo('groups.index');
+			}, function(err) {
+				console.log('err: ', err, self)
+				self.get('controllers.application').set('notify_message', 'Failed to save group.  ('+msg+')');
+				toggleMessageSlide();
+			});
+		},
+		cancelSaveGroupAction: function() {
+			var group = this.controller.get('model');
+
+			group.deleteRecord();
+
+			this.transitionTo('groups.index');
 		}
 	}
 });

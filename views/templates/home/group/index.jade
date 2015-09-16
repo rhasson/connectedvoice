@@ -1,0 +1,22 @@
+script(type="text/x-handlebars", data-template-name="group/index")
+  div.row
+    div.col-md-9
+      {{#link-to "group.create" 0}}<button type="button" class="btn btn-primary">Add Group</button>{{/link-to}}
+  div.row
+    div.col-md-9
+      {{#if model}}
+      table.table.table-hover
+        thead
+          th Name
+          th Last Updated
+          th Actions
+        <tbody>
+        {{#each group in model}}
+        <tr>
+        <th scope="row">{{#link-to "group.create" group.account_id group.id}}{{group.name}}{{/link-to}}</th>
+        <td><span>{{format-date group.date_updated}}</span></td>
+        <td><span class="glyphicon glyphicon-remove-circle red" {{action "showModal" "remove-group-modal" group}}></span></td>
+        </tr>
+        {{/each}}
+        </tbody>
+      {{/if}}

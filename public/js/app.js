@@ -40,15 +40,11 @@ App.Ivr = DS.Model.extend({
 	actions: DS.attr()
 });
 
-App.Groups = DS.Model.extend({
+App.Group = DS.Model.extend({
 	account_id: DS.belongsTo('account'),
 	name: DS.attr('string'),
 	date_updated: DS.attr('date'),
-	members: DS.attr(),
-	init: function() {
-		this._super.apply(this, arguments);
-		this.members = [];
-	}
+	members: DS.attr()
 });
 
 App.Error = DS.Model.extend({
@@ -72,6 +68,21 @@ App.Ivrsay = DS.Model.extend({
 		};
 		this.params = {
 			voice_options: ['Woman', 'Man']
+		};
+	}
+});
+
+App.Ivrgroup = DS.Model.extend({
+	index: DS.attr('number'),
+	verb: 'group',
+	init: function() {
+		this._super.apply(this, arguments);
+		this.nouns = {
+			text: null
+		};
+		this.verb_attributes = {};
+		this.params = {
+			group_names: []
 		};
 	}
 });
@@ -240,10 +251,9 @@ App.Router.map(function() {
 			});
 			this.route('remove', {path: '/:account_id/:ivr_id'});
 		});
-		this.resource('groups', {path: '/groups/:account_id'}, function() {
+		this.resource('group', {path: '/group/:account_id'}, function() {
 			this.route('index');
-			this.route('create');
-			this.route('edit', {path: '/:group_id'});
+			this.route('create', {path: '/:group_id'});
 		});
 		this.resource('dashboard');
 		this.resource('analytics');
@@ -303,7 +313,7 @@ App.SessionController = Ember.Controller.extend({
 		this.store.unloadAll('account');
 		this.store.unloadAll('number');
 		this.store.unloadAll('ivr');
-		this.store.unloadAll('groups');
+		this.store.unloadAll('group');
 		this.set('isLoggedIn', this.isSessionPresent());
 	},
 	isSessionPresent: function() {
@@ -353,8 +363,7 @@ App.ApplicationRoute = Ember.Route.extend({
 				})
 				.catch(function(err) {
 					console.log('err: ', err)
-					self.get('controller').set('notify_message', 'Failed to remove number to server.  Please try again later');
-					toggleMessageSlide();
+					self.send('notifyMessage', 'Failed to remove number to server.  Please try again later');
 				});
 			});
 		},
@@ -373,13 +382,16 @@ App.ApplicationRoute = Ember.Route.extend({
 				})
 				.catch(function(err) {
 					console.log('err: ', err)
-					self.get('controller').set('notify_message', 'Failed to save changes to server.  Please try again later');
-					toggleMessageSlide();
+					self.send('notifyMessage', 'Failed to save changes to server.  Please try again later');
 				});
 		},
 		removeMemberAction: function(params) {
-			var group = this.store.all('groups').findBy('name', params.group_name);
+			var group = this.store.all('group').findBy('name', params.group_name);
 			group.get('members').removeObject(params.member);
+		},
+		removeGroupAction: function(params) {
+			var group = this.store.getById('group', params.id);
+			group.destroyRecord();
 		},
 		notifyMessage: function(msg) {
 			this.controller.set('notify_message', msg);
@@ -529,6 +541,8 @@ App.HomeRoute = Ember.Route.extend({
 		var model = this.get('model');
 
 		if ('status' in model && model.status === 1) session.clearSession();
+
+		this.store.findAll('group');
 	},
 	setupController: function(controller, model) {
 		var twilio;
@@ -818,9 +832,9 @@ App.NumbersCreateController = Ember.Controller.extend({
 					else self.set('phoneList', []);
 				}
 			}, 'json');
+			//****  TODO: Error - jq.catch is not a function
 			jq.catch(function(err) {
-				self.get("controllers.application").set('notify_message', 'Failed to get phone numbers.  Please try again later');
-				toggleMessageSlide();
+				self.controllerFor('application').send('notifyMessage', 'Failed to get phone numbers.  Please try again later');
 				self.set('phoneList', []);
 			});
 		},
@@ -837,8 +851,7 @@ App.NumbersCreateController = Ember.Controller.extend({
 				}
 			}, 'json');
 			jq.catch(function(err) {
-				self.get("controllers.application").set('notify_message', 'Failed to provision phone number.  ('+err+')');
-				toggleMessageSlide();
+				self.controllerFor('application').send('notifyMessage', 'Failed to provision phone number.  Please try again later');
 			});
 		}
 	}
@@ -896,7 +909,7 @@ App.IvrIndexRoute = Ember.Route.extend({
 	},
 	actions: {
 		removeIvrAction: function(ivr) {
-			ivr.deleteRecord();
+			ivr.destroyRecord();
 		}
 	}
 });
@@ -940,16 +953,16 @@ App.CreateIvrRoute = Ember.Route.extend({
 			ivr.set('actions', verbs);
 			ivr.set('date_updated', new Date());
 			
-			//console.log('FINAL IVR: ', ivr.toJSON());
-
+			console.log('FINAL IVR: ', ivr.toJSON());
+/*
 			ivr.save().then(function() {
 				//After model was saved successfully clear up IVR creation variables and redirect to ivr.index
 				self.send('cancelIvrAction');
 			}, function(err) {
 				console.log('err: ', err, self)
-				self.get('controllers.application').set('notify_message', 'Failed to save IVR.  ('+msg+')');
-				toggleMessageSlide();
+				self.controllerFor('application').send('notifyMessage', 'Failed to save IVR to server.  Please try again later');
 			});
+*/
 		},
 		cancelIvrAction: function() {
 			var self = this;
@@ -1011,6 +1024,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 
 			model = this.store.createRecord('ivr'+name, model_in);
 			model.set('index', id);
+			if (name === 'group') model.set('params.group_names', this.store.all('group').map( function(i) {return i.get('name')} ));
 
 			containerView.get('content').pushObject(model);
 
@@ -1055,7 +1069,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 	},
 	canNest: function(container, verbToNest) {
 		var nestable = ['gather'];
-		var allowedToNest = ['say', 'pause'];
+		var allowedToNest = ['say', 'pause', 'group'];
 		var actions = ['dial', 'record', 'message', 'email', 'webtask'];
 		var containerView = container; //this.get('controller').get('model._containerView');//Ember.View.views['ivrcontainerview'];
 		var views = containerView.toArray();  //containerView.get('content');
@@ -1074,7 +1088,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 		return parent;
 	},
 	getActionFor: function(container, verb) {
-		var actions = ['dial', 'record', 'message', 'email', 'webtask'];
+		var actions = ['dial', 'record', 'message', 'email', 'webtask', 'group'];
 		var containerView = container; //this.get('model._containerView');
 		var views = containerView.toArray();
 		var view;
@@ -1133,37 +1147,50 @@ App.CreateIvrView = Ember.View.extend({
 });
 /*********************************************************************/
 
+//TODO: finish implementing UPDATE
+
 /********************** GROUPS ***************************************/
-App.GroupsIndexRoute = Ember.Route.extend({
+App.GroupIndexRoute = Ember.Route.extend({
 	model: function(params) {
-		return this.store.all('groups');
+		return this.store.all('group');
 	},
 	setupController: function(controller, model) {
 		controller.set('model', model);
 	}
 });
 
-App.GroupsCreateRoute = Ember.Route.extend({
+App.GroupIndexController = Ember.Controller.extend({
+	needs: ['application'],
+	actions: {
+		showModal: function(name, group) {
+			this.get('controllers.application').send('showModal', {name: name, model: group});
+		}
+	}
+});
+
+App.GroupCreateRoute = Ember.Route.extend({
 	needs: ['application'],
 	beforeModel: function(transition) {
-		var temp = this.store.all('groups').findBy('name', undefined);
+		var temp = this.store.all('group').findBy('name', undefined);
 		if (temp) temp.deleteRecord();
 
-		this.set('_account', this.store.find('account', transition.params.groups.account_id));
+		this.set('_account', this.store.find('account', transition.params.group.account_id));
 	},
 	model: function(params) {
-		if (Ember.keys(params).length === 0 || params.group_id === '0') return this.store.createRecord('groups');  //return Ember.Object.create();
-		else this.transitionTo('groups.index');
+		if (Ember.keys(params).length === 0 || params.group_id === '0') return this.store.createRecord('group');  //return Ember.Object.create();
+		else return this.store.find('group', params.group_id);
 	},
 	setupController: function(controller, model) {
 		model.set('account_id', this.get('_account'));
+		if (!Ember.isArray(model.get('members'))) model.set('members', []);
 		controller.set('model', model);
 	},
 	actions: {
 		addMember: function(member) {
 			var model = this.controller.get('model');
 			var members = model.get('members');
-			this.controller.get('model').get('members').pushObject(member);
+
+			if (member) this.controller.get('model').get('members').pushObject(member);
 		},
 		saveGroupAction: function() {
 			var self = this;
@@ -1172,65 +1199,30 @@ App.GroupsCreateRoute = Ember.Route.extend({
 			group.set('date_updated', new Date());
 
 			group.save().then(function() {
-				this.transitionTo('groups.index');
+				self.transitionTo('group.index');
 			}, function(err) {
-				console.log('err: ', err, self)
-				self.get('controllers.application').set('notify_message', 'Failed to save group.  ('+msg+')');
-				toggleMessageSlide();
+				console.log('err: ', err)
+				self.get('controllers.application').send('notifyMessage', 'Failed to save group to server.  Please try again later');
 			});
 		},
 		cancelSaveGroupAction: function() {
-			var group = this.controller.get('model');
+			var model = this.controller.get('model');
+			if (model.get('id') === null)	this.controller.get('model').deleteRecord();
 
-			group.deleteRecord();
-
-			this.transitionTo('groups.index');
+			this.transitionTo('group.index');
 		}
 	}
 });
 
-App.GroupsCreateController = Ember.Controller.extend({
+App.GroupCreateController = Ember.Controller.extend({
 	sortOrder: ['priority'],
-	members: Ember.computed('members', function() {
+	members: Ember.computed('model.members', function() {
 		return this.get('model').get('members');
 	}),
 	sortedMembers: Ember.computed.sort('members', 'sortOrder'),
 	group_name: Ember.computed('groupName', function() {
 		return this.get('model').get('name');
 	})
-});
-
-App.GroupsEditRoute = Ember.Route.extend({
-	model: function(params) {
-		return this.store.find('groups', params.group_id);
-	},
-	setupController: function(controller, model) {
-		controller.set('model', model);
-	}
-});
-
-App.GroupsRemoveRoute = Ember.Route.extend({
-	model: function(params) {
-		return params.group_id;
-	},
-	setupController: function(controller, model) {
-		controller.set('model', model);
-	},
-	actions: {
-		removeGroup: function() {
-			var group = this.store.find('groups', this.controller.get('model'))
-			group.deleteRecord();
-			group.save().then(function(resp) {
-					//this.refresh();
-					//console.log(self.container.lookup('view:configuration'));
-			})
-			.catch(function(err) {
-				console.log('err: ', err)
-				self.get('controller').set('notify_message', 'Failed to remove group to server.  Please try again later');
-				toggleMessageSlide();
-			});
-		}
-	}
 });
 
 App.GroupMembersComponent = Ember.Component.extend({

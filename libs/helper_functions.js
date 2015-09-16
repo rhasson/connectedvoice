@@ -550,6 +550,91 @@ module.exports = helpers = {
 			}});
 		});
 	},
+	getGroupRecord: function(id, userid) {
+		return dbget(id).then(function(doc) {
+			var body = doc.shift();
+			var headers = doc.shift();
+			
+			if (body.account_id === userid) {
+				return when.resolve(helpers.formatGroupRecord(body));
+			} else return when.reject(new Error('Failed to get group from database - User ID mismatch'));
+		});
+	},
+	getAllGroupsRecord: function(userid) {
+		return dbsearch('searchGroup', 'searchGroup', {q: 'account_id:'+userid, include_docs: true})
+			.then(function(response) {
+				var results;
+				var body = response.shift();
+				var headers = response.shift();
+				
+				if (headers['status-code'] !== 200) return when.reject(new Error('Group DB Search returned error - '+headers['status-code']));
+
+				if (body && body.rows.length > 0) {
+					results = _.pluck(body.rows, 'doc');
+					record = helpers.formatGroupRecord(results.filter(function(i) { return i !== undefined }));
+					return when.resolve(record);
+				} else if (body.rows.length === 0) return when.resolve({groups: []});
+			})
+			.catch(function(err) {
+				return when.reject(new Error('IVR DB Search failed - ' + err.message));
+			});
+	},
+	createGroupRecord: function(group, userid) {
+		group.type = 'group';
+		if (userid === group.account_id) {
+			return dbinsert(group).then(function(doc) {
+				var body = doc.shift();
+
+				if ('ok' in body && 'id' in body) return dbget(body.id);
+				else return when.reject(new Error('Failed to save group to database'));
+			}).then(function(doc) {
+				var body = doc.shift();
+				var headers = doc.shift();
+
+			 	return when.resolve(helpers.formatGroupRecord(body));
+			});
+		} else return when.reject(new Error('Failed to save group to database - User ID mismatch'));
+	},
+	updateGroupRecord: function(group, id, userid) {
+		if ('account_id' in group && group.account_id === userid) {
+			return dbget(id).then(function(doc) {
+				var body = doc.shift();
+				var headers = doc.shift();
+				var newdoc;
+
+				if (body._id !== id) return when.reject(new Error('Record ID mismatch'));
+
+				delete body._id;
+				_.assign(body, group);
+
+				return dbinsert(body, id).then(function() {
+					return dbget(id).then(function(d) {
+						var body = d.shift();
+						var record = helpers.formatGroupRecord(body);
+						return when.resolve(record);
+					});
+				}).catch(function(err) {
+					return when.reject(new Error(err.toString()));
+				});
+			});
+		} else {
+			return when.reject(new Error('Account ID was not found in the request'));
+		}
+	},
+	deleteGroupRecord: function(id, userid) {
+		return dbget(id).then(function(doc) {
+			var orig_doc = doc.shift();
+			return dbremove(orig_doc._id, orig_doc._rev).then(function(doc) {
+				var body = doc.shift();
+				if (body.ok === true) {
+					return when.resolve({});
+				} else return when.reject(new Error('Failed to delete group record'));
+			})			
+		})
+		.catch(function(err) {
+			return when.reject(new Error(err.toString()));
+		});
+	},
 	combinePromiseResponses: function(tns, results) {
 		Object.keys(tns).map(function(tn, i) {
 			body = (results[i].state === 'rejected') ? results[i].reason : results[i].value;
@@ -565,6 +650,27 @@ module.exports = helpers = {
 		delete doc.salt;
 
 		return doc;
+	},
+	formatGroupRecord: function(group) {
+		if (group instanceof Array) {
+			return {groups: _.uniq(group, '_id').map(function(item) {
+				return {
+					id: item._id,
+					account_id: item.account_id,
+					date_updated: item.date_updated,
+					name: item.name,
+					members: item.members
+				}
+			})};
+		} else {
+			group.id = group._id;
+
+			delete group._id;
+			delete group._rev;
+			delete group.type;
+
+			return {group: group};
+		}
 	},
 	formatIvrRecord: function(list) {
 		return _.uniq(list, '_id').map(function(item) {

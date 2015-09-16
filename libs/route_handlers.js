@@ -429,5 +429,112 @@ module.exports = {
 	getSmsStatsByTns: function(request, reply) {
 		//https://familyengage.cloudant.com/voiceassist/_design/callByType/_search/callByType?q=type:%22call_status%22%20AND%20from:(%22+15082723213%22%20OR%20%22+15087615839%22)&counts=[%22from%22]
 		//get call stats by for a specific TN
-	}
+	},
+	getGroup: function(request, reply) {
+		var _id;
+
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			if ('id' in request.params)	return helpers.getGroupRecord(request.params.id, _id);
+			else return helpers.getAllGroupsRecord(_id);
+		})
+		.then(function(doc) {
+			reply(JSON.stringify(doc));
+		})
+		.catch(function(err) {
+			var msg;
+			console.log('create group error: ', err);
+
+			if ('status' in err) {
+				msg = "Cannot complete your request at this time: "+err.code;
+			} else msg = err.toString();
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: 'id'
+					} ]
+				}
+			})).code(422);
+		});
+	},
+	createGroup: function(request, reply) {
+		var _id;
+
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			return helpers.createGroupRecord(request.payload.group, _id);
+		})
+		.then(function(doc) {
+			reply(JSON.stringify(doc));
+		})
+		.catch(function(err) {
+			var msg;
+			console.log('create group error: ', err);
+
+			if ('status' in err) {
+				msg = "Cannot complete your request at this time: "+err.code;
+			} else msg = err.toString();
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: 'id'
+					} ]
+				}
+			})).code(422);
+		});
+	},
+	updateGroup: function(request, reply) {
+		var _id;
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			return helpers.updateGroupRecord(request.payload.group, request.params.id, _id);
+		})
+		.then(function(doc) {
+			reply(doc);
+		})
+		.catch(function(err) {
+			var msg;
+			console.log('update group error: ', err);
+
+			if ('status' in err) {
+				msg = "Cannot complete your request at this time: "+err.code;
+			} else msg = err.toString();
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: 'id'
+					} ]
+				}
+			})).code(422);
+		});		
+	},
+	deleteGroup: function(request, reply) {
+		var _id;
+		helpers.isUserLoggedIn(request.state).then(function(id) {
+			_id = id;
+			return helpers.deleteGroupRecord(request.params.id, _id);
+		})
+		.then(function(doc) {
+			reply(doc);
+		})
+		.catch(function(err) {
+			var msg;
+			console.log('delete group error: ', err);
+
+			if ('status' in err) {
+				msg = "Cannot complete your request at this time: "+err.code;
+			} else msg = err.toString();
+			reply(JSON.stringify({
+				error: {
+					id: [ {
+						message: msg,
+						attribute: 'id'
+					} ]
+				}
+			})).code(422);
+		});
+	},
 }

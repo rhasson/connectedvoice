@@ -96,6 +96,17 @@ server.route([
 ]);
 
 /*
+*  Group routes
+*/
+server.route([
+	{ method: 'GET', path: '/api/v0/group', handler: handlers.getGroup },
+	{ method: 'GET', path: '/api/v0/group/{id}', handler: handlers.getGroup },
+	{ method: 'POST', path: '/api/v0/group', handler: handlers.createGroup },
+	{ method: 'PUT', path: '/api/v0/group/{id}', handler: handlers.updateGroup },
+	{ method: 'DELETE', path: '/api/v0/group/{id}', handler: handlers.deleteGroup }
+]);
+
+/*
 * Call Statistics
 */
 server.route([

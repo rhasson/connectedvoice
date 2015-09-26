@@ -954,7 +954,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			ivr.set('date_updated', new Date());
 			
 			console.log('FINAL IVR: ', ivr.toJSON());
-/*
+
 			ivr.save().then(function() {
 				//After model was saved successfully clear up IVR creation variables and redirect to ivr.index
 				self.send('cancelIvrAction');
@@ -962,7 +962,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 				console.log('err: ', err, self)
 				self.controllerFor('application').send('notifyMessage', 'Failed to save IVR to server.  Please try again later');
 			});
-*/
+
 		},
 		cancelIvrAction: function() {
 			var self = this;
@@ -1024,7 +1024,11 @@ App.CreateIvrRoute = Ember.Route.extend({
 
 			model = this.store.createRecord('ivr'+name, model_in);
 			model.set('index', id);
-			if (name === 'group') model.set('params.group_names', this.store.all('group').map( function(i) {return i.get('name')} ));
+			if (name === 'group') {
+				model.set('params.group_names', this.store.all('group').map( function(i) {
+					return {name: i.get('name'), id: i.get('id')} 
+				}));
+			}
 
 			containerView.get('content').pushObject(model);
 
@@ -1455,7 +1459,7 @@ function serializeIvr(views) {
 			p_id = undefined;
 		} else if (!p_id && a_id) {
 			for (var j=0; j < actions.length; j++) {
-				verbs.unshift(actions[j]);
+				verbs.push(actions[j]);
 			}
 			addToArray(verbs, model);
 			a_id = undefined;
@@ -1476,7 +1480,7 @@ function serializeIvr(views) {
 		}
 	}
 
-console.log('FINAL: ', verbs)
+//console.log('FINAL: ', verbs)
 	return verbs;
 }
 

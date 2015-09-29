@@ -93,7 +93,8 @@ App.Ivrdial = DS.Model.extend({
 	init: function() {
 		this._super.apply(this, arguments);
 		this.nouns = {
-			text: null
+			text: null,
+			number: null
 		};
 		this.verb_attributes = {
 			timeout: 30,
@@ -1026,7 +1027,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			model.set('index', id);
 			if (name === 'group') {
 				model.set('params.group_names', this.store.all('group').map( function(i) {
-					return {name: i.get('name'), id: i.get('id')} 
+					return {name: i.get('name'), id: JSON.stringify(i.get('members'))/*id: i.get('id')*/} 
 				}));
 			}
 

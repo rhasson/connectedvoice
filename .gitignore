@@ -7,3 +7,4 @@ libs/mock.js
 node_modules/
 test/
 private/
+flow_interfaces/

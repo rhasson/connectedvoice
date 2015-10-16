@@ -1,3 +1,4 @@
+/* @flow */
 //Main Emberjs App file
 
 App = Ember.Application.create({
@@ -127,7 +128,7 @@ App.Ivrpause = DS.Model.extend({
 		this.verb_attributes = {
 			len: 1
 		};
-		params = {};
+		this.params = {};
 	}
 });
 
@@ -664,7 +665,7 @@ App.ConfigurationRoute = Ember.Route.extend({
  		*  use that as the base model for this route
  		*/
 	    var nums = this.store.all('number') || [];
-	        ivrs = this.store.all('ivr') || [];
+	    var ivrs = this.store.all('ivr') || [];
 	    var stream = nums.map(function(item) {
 	    	var x;
 	    	var id = item.get('ivr_id');
@@ -675,7 +676,7 @@ App.ConfigurationRoute = Ember.Route.extend({
 	    	return item;
 	    });
 
-	    return Em.ArrayProxy.createWithMixins(Ember.SortableMixin, {
+	    return Ember.ArrayProxy.createWithMixins(Ember.SortableMixin, {  //Ember was originally Em
 	        content: stream,
 	        sortProperties: this.sortProperties,
 	        sortAscending: this.sortAscending,
@@ -992,13 +993,13 @@ App.CreateIvrRoute = Ember.Route.extend({
 
 			for (var i=0, id, temp, v; i < arr.length; i++) {
 				v = arr[i];
-				id = v.item.get('index');
+				id = v.item.get('index') || '';
 				if (id === current_id) {
 					//take existing values and remove word nested from them
 					temp = v.get('templateName');
 					v.set('templateName', temp.replace(/-nested$/, ''));
 					temp = v.get('classNames').toArray().map(function(x) {
-						if (/-nested/.test(x)) x = x.replace(/-nested[0-9]+.$/, ''+id);
+						if (/-nested/.test(x)) x = x.replace(/-nested[0-9]+.$/, id);  //originally ''+id
 						return x;
 					});
 					v.set('classNames', temp);
@@ -1015,6 +1016,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			var containerView = this.get('controller').get('model._containerView'); //Ember.View.views['ivrcontainerview'];
 			var viewClass, id, parent_id, action_for;
 			var model = undefined;
+			var compClass;
 
 			parent_id = this.canNest(containerView, name);  //if nestable, returns the index id of the parent view to nest under
 			action_for = this.getActionFor(containerView, name); //if this is an action in response to a verb, return the index id of the verb it's in response to

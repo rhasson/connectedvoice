@@ -1,3 +1,4 @@
+/* @flow */
 /*  VoiceAssist Web Server
 *   Version 0.0.1
 */

@@ -1029,7 +1029,7 @@ App.CreateIvrRoute = Ember.Route.extend({
 			model.set('index', id);
 			if (name === 'group') {
 				model.set('params.group_names', this.store.all('group').map( function(i) {
-					return {name: i.get('name'), id: JSON.stringify(i.get('members'))/*id: i.get('id')*/} 
+					return {name: i.get('name'), id: i.get('id')}   //i.get('members')
 				}));
 			}
 

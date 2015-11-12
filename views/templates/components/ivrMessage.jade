@@ -9,4 +9,4 @@ script(type="text/x-handlebars", data-template-name="components/ivr-message")
         {{input class="form-control va-ivr-text va-inline-space" type="text" placeholder="Text" value=item.nouns.body}}
         label.form-control.va-action-label.va-inline-space to
         {{input class="form-control va-ivr-tn va-inline-space" type="text" placeholder="Recipient" value=item.verb_attributes.to}}
-        <span id="ivr-message-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>
+        <span id="ivr-message-remove" class="glyphicon glyphicon-remove-sign va-inline-space" {{action "removeIvrItemAction" view}}></span>

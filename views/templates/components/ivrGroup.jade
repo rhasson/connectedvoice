@@ -7,4 +7,4 @@ script(type="text/x-handlebars", data-template-name="components/ivr-group")
         {{/if}}
         label.form-control.va-action-label.va-inline-space GROUP to use 
         {{view "select" content=item.params.group_names optionValuePath="content.id" optionLabelPath="content.name" value=item.nouns.text class="form-control va-inline-space va-ivr-lg-num"}}
-        <span id="ivr-group-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>
+        <span id="ivr-group-remove" class="glyphicon glyphicon-remove-sign va-inline-space" {{action "removeIvrItemAction" view}}></span>

@@ -9,4 +9,4 @@ script(type="text/x-handlebars", data-template-name="components/ivr-gather")
         {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="5 seconds" value=item.verb_attributes.timeout}}
         label.form-control.va-action-label.va-inline-space or a press of
         {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="#" value=item.verb_attributes.finishOnKey}}
-        <span id="ivr-gather-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>
+        <span id="ivr-gather-remove" class="glyphicon glyphicon-remove-sign va-inline-space" {{action "removeIvrItemAction" view}}></span>

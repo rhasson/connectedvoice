@@ -3,24 +3,30 @@ script(type="text/x-handlebars", data-template-name="components/phone-numbers")
     div.col-md-9
       table.table.table-hover
         thead
-          th Phone Number
-          th Capabilities
-          th IVR Name
-          th Actions
+          th.center-div Phone Number
+          th.center-div Capabilities
+          th.center-div Voice IVR
+          th.center-div SMS IVR
+          th.center-div Actions
         <tbody>
         {{#each model.content as |number|}}
-        <tr>
-        <th scope="row"> {{number.friendly_name}}</th>
+        <tr class="center-div">
+        <th class="center-div" scope="row"><a class="messageinner" data-toggle="collapse" data-target="#content-{{number.id}}"><span class="glyphicon glyphicon-triangle-right"></span></a>{{number.friendly_name}}</th>
         <td>
         <span {{bind-attr class=":glyphicon number.capabilities.voice:glyphicon-earphone:hidden"}} alt="Voice"></span>
         <span {{bind-attr class=":glyphicon number.capabilities.sms:glyphicon-comment:hidden"}} alt="SMS"></span>
         <span {{bind-attr class=":glyphicon number.capabilities.mms:glyphicon-picture:hidden"}} alt="MMS"></span>
         </td>
-        <td>{{view "selects" action="selectChangeAction" content=model.names value=number.ivr_name prompt="-- No IVR --" class="form-control va-inline-space"}}</td>
-        <td>
-        <span class="glyphicon glyphicon-remove-circle red" {{action "showModal" "remove-number-modal" number}}></span>
-        <span class="glyphicon glyphicon-ok-circle gray" {{action "saveIvrChangeAction" number.id number.ivr_name}}></span>
+        <td>{{view "selects" action="selectChangeAction" content=model.names value=number.voice_ivr_name prompt="-- No IVR --" class="form-control va-inline-space"}}</td>
+        <td>{{view "selects" action="selectChangeAction" content=model.names value=number.sms_ivr_name prompt="-- No IVR --" class="form-control va-inline-space"}}</td>
+        <td id="_actions">
+        <span class="glyphicon glyphicon-remove-sign red" {{action "showModal" "remove-number-modal" number}}></span>
+        <span class="glyphicon glyphicon-ok-sign gray" {{action "saveIvrChangeAction" number}}></span>
         </td>
+        </tr>
+        <tr id="content-{{number.id}}" class="collapse center-div">
+        th.center-div(scope="row") Default SMS response:
+        <td colspan="3">{{input class="form-control va-inline-space" type="text" placeholder=number._default_sms_msg value=number.default_sms_msg key-up="onKeyPress"}}</td>
         </tr>
         {{/each}}
         </tbody>

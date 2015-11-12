@@ -3,5 +3,5 @@ script(type="text/x-handlebars", data-template-name="components/my-phone-numbers
     div.col-md-9
       {{#each number in model}}
       <span>{{#link-to "ivr.create" number.id}}{{number.friendly_name}}{{/link-to}}</span>
-      <span class="glyphicon glyphicon-remove-circle" {{action "removeNumberAction" number.id}}></span>
+      <span class="glyphicon glyphicon-remove-sign" {{action "removeNumberAction" number.id}}></span>
       {{/each}}

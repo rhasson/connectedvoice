@@ -520,7 +520,7 @@ module.exports = helpers = {
 	},
 	getCallStatusById: function(userid) {
 		return dbsearch('callByType', 'callByType', {
-			q: 'type:"call_status" AND id:"' + userid + '"',
+			q: 'type:"call_status" AND direction:"inbound" AND id:"' + userid + '"',
 			counts: '["from"]',
 			limit: 10
 		}).then(function(doc) {
@@ -536,13 +536,15 @@ module.exports = helpers = {
 	},
 	getSmsStatusById: function(userid) {
 		return dbsearch('callByType', 'callByType', {
-			q: 'type:"sms_status" AND id:"' + userid + '"',
+			q: 'type:"sms_status" AND status:"received" AND id:"' + userid + '"',
 			counts: '["from"]',
 			limit: 10
 		}).then(function(doc) {
 			var body = doc.shift();
 			var headers = doc.shift();
 			var data = helpers.convertDocToChartData(body);
+
+			console.log('SMS STATS: ', body)
 			
 			return when.resolve({SmsStats: {
 				contents: data,
@@ -697,9 +699,13 @@ module.exports = helpers = {
 						account_sid: item.account_sid,
 						friendly_name: item.friendly_name,
 						phone_number: item.phone_number,
-						capabilities: item.capabilities
+						capabilities: item.capabilities,
+						ivr_id: ('ivr_id' in item) ? item.ivr_id : undefined,
+						sms_ivr_id: ('sms_ivr_id' in item) ? item.sms_ivr_id : undefined,
+						default_sms_msg: ('default_sms_msg' in item) ? item.default_sms_msg : undefined,
+						_default_sms_msg: 'Your message has been received'
 					}
-				if ('ivr_id' in item) ret.ivr_id = item.ivr_id;
+				//if ('ivr_id' in item) ret.ivr_id = item.ivr_id;
 				return ret;
 			});
 		}
@@ -742,9 +748,14 @@ module.exports = helpers = {
 					account_sid: item.account_sid,
 					friendly_name: item.friendly_name,
 					phone_number: item.phone_number,
-					capabilities: item.capabilities
+					capabilities: item.capabilities,
+					ivr_id: ('ivr_id' in item) ? item.ivr_id : undefined,
+					sms_ivr_id: ('sms_ivr_id' in item) ? item.sms_ivr_id : undefined,
+					default_sms_msg: ('default_sms_msg' in item) ? item.default_sms_msg : undefined,
+					_default_sms_msg: 'Your message has been received'
 				}
-				if ('ivr_id' in item) ret.ivr_id = item.ivr_id;
+				//if ('ivr_id' in item) ret.ivr_id = item.ivr_id;
+				//if ('sms_ivr_id' in item) ret.sms_ivr_id = item.sms_ivr_id;
 				return ret;
 			});
 		}
@@ -767,7 +778,8 @@ module.exports = helpers = {
 		var colors;
 		var count = -1;
 
-		if (!('counts' in body) || body.rows.length === 0) return contents;
+		if (body.rows.length === 0) return [];
+		else if (!('counts' in body)) return [];
 
 		colors = helpers.getRandomColor(Object.keys(body.counts.from).length);
 

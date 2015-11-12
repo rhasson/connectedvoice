@@ -31,7 +31,10 @@ App.Number = DS.Model.extend({
 	friendly_name: DS.attr('string'),
 	phone_number: DS.attr('string'),
 	capabilities: DS.attr(),
-	ivr_id: DS.attr()
+	ivr_id: DS.attr(),
+	sms_ivr_id: DS.attr(),
+	default_sms_msg: DS.attr('string'),
+	_default_sms_msg: DS.attr('string')
 });
 
 App.Ivr = DS.Model.extend({
@@ -369,16 +372,20 @@ App.ApplicationRoute = Ember.Route.extend({
 				});
 			});
 		},
-		//params: number_id, ivr_name
-		saveIvrToNumber: function(params) {
+		//params: number_id, voice_ivr_name, sms_ivr_name
+		saveIvrToNumber: function(num) {
 			var self = this;
-			var ivr = this.store.all('ivr').filterBy('ivr_name', params.ivr_name);
-			var number = this.store.all('number').filterBy('id', params.number_id).pop();
-			var ivr_id = ivr.length ? ivr.pop().get('id') : "";
+			var number = this.store.all('number').filterBy('id', num.get('id')).pop();
+			var voice_ivr = this.store.all('ivr').filterBy('ivr_name', num.get('voice_ivr_name'));
+			var sms_ivr = this.store.all('ivr').filterBy('ivr_name', num.get('sms_ivr_name'));
+			var voice_ivr_id = voice_ivr.length ? voice_ivr.pop().get('id') : "";
+			var sms_ivr_id = sms_ivr.length ? sms_ivr.pop().get('id') : "";
+			var msg = num.get('default_sms_msg') || "";
 
-			if (number.get('ivr_id') === ivr_id) return;
+			number.set('ivr_id', voice_ivr_id);
+			number.set('sms_ivr_id', sms_ivr_id);
+			number.set('default_sms_msg', msg);
 
-			number.set('ivr_id', ivr_id);
 			number.save().then(function(resp) {
 					self.refresh();
 				})
@@ -668,10 +675,15 @@ App.ConfigurationRoute = Ember.Route.extend({
 	    var ivrs = this.store.all('ivr') || [];
 	    var stream = nums.map(function(item) {
 	    	var x;
-	    	var id = item.get('ivr_id');
-	    	if (id) {
-	    		x = ivrs.findBy('id', id);
-	    		if (x) item.set('ivr_name', x.get('ivr_name'));
+	    	var vid = item.get('ivr_id');
+	    	var sid = item.get('sms_ivr_id');
+	    	if (vid) {
+	    		x = ivrs.findBy('id', vid);
+	    		if (x) item.set('voice_ivr_name', x.get('ivr_name'));
+	    	}
+	    	if (sid) {
+	    		x = ivrs.findBy('id', sid);
+	    		if (x) item.set('sms_ivr_name', x.get('ivr_name'));
 	    	}
 	    	return item;
 	    });
@@ -713,16 +725,35 @@ App.PhoneNumbersComponent = Ember.Component.extend({
 		*/
 		selectChangeAction: function(prev, value, obj) {
 			//console.log('Select Changed: ', prev, ' to ', value)
-			var el = '#' + obj.get('elementId');
-			if (prev === value) {
-				$(el).parent().next().children('span.glyphicon-ok-circle').removeClass('green').addClass('gray');
+			//console.log('OBJ: ', obj)
+
+			var el = (('get' in obj) && (typeof obj.get === 'function')) ? '#' + obj.get('elementId') : '#' + obj.id;
+			var actions_td = $(el).parents('tr').find('#_actions');
+			var ok;
+
+			if (actions_td.length == 0) actions_td = $(el).parents('tr').prev('tr').find('#_actions');
+			ok = $(actions_td).children('span.glyphicon-ok-circle');
+
+			// handle the case where onkeydown event is sent from text fields
+			if (value === undefined) {  //value can be null if there is no selection in the dropdown, but it will never be undefined
+				if (prev) {  //this is originating from the onKeyPress event
+					if ($(ok).hasClass('gray'))	$(ok).addClass('green').removeClass('gray');
+				}
+			}
+			// handle the case where a select change event is sent from dropdowns
+			else if (prev == value) {
+				if ($(ok).hasClass('green')) $(ok).removeClass('green').addClass('gray');
 			} else {
-				$(el).parent().next().children('span.glyphicon-ok-circle').addClass('green').removeClass('gray');
+				if ($(ok).hasClass('gray'))	$(ok).addClass('green').removeClass('gray');
 			}
 		},
-		saveIvrChangeAction: function(number_id, ivr_name, obj) {
+		saveIvrChangeAction: function(number /*number_id, voice_ivr_name, sms_ivr_name, obj*/) {
 			//save the current ivr to the number
-			this.sendAction('action', 'saveIvrToNumber', {number_id: number_id, ivr_name: ivr_name});
+			this.sendAction('action', 'saveIvrToNumber', number);
+		},
+		onKeyPress: function(text, evt) {
+			if (text == undefined) text = '';
+			this.send('selectChangeAction', text, undefined, evt.target);
 		}
 	}
 });

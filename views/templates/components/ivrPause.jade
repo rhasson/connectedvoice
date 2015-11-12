@@ -7,4 +7,4 @@ script(type="text/x-handlebars", data-template-name="components/ivr-pause")
         {{/if}}
         label.form-control.va-action-label.va-inline-space PAUSE
         {{input class="form-control va-ivr-sm-num va-inline-space" type="text" placeholder="Duration in seconds" value=item.verb_attributes.len}}
-        <span id="ivr-pause-remove" class="glyphicon glyphicon-remove-circle va-inline-space" {{action "removeIvrItemAction" view}}></span>
+        <span id="ivr-pause-remove" class="glyphicon glyphicon-remove-sign va-inline-space" {{action "removeIvrItemAction" view}}></span>

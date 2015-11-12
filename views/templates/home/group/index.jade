@@ -15,7 +15,7 @@ script(type="text/x-handlebars", data-template-name="group/index")
         <tr>
         <th scope="row">{{#link-to "group.create" group.account_id group.id}}{{group.name}}{{/link-to}}</th>
         <td><span>{{format-date group.date_updated}}</span></td>
-        <td><span class="glyphicon glyphicon-remove-circle red" {{action "showModal" "remove-group-modal" group}}></span></td>
+        <td><span class="glyphicon glyphicon-remove-sign red" {{action "showModal" "remove-group-modal" group}}></span></td>
         </tr>
         {{/each}}
         </tbody>

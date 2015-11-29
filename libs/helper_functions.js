@@ -661,7 +661,8 @@ module.exports = helpers = {
 					account_id: item.account_id,
 					date_updated: item.date_updated,
 					name: item.name,
-					members: item.members
+					members: item.members,
+					issue_cmd: item.issue_cmd
 				}
 			})};
 		} else {

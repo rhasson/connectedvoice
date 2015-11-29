@@ -48,7 +48,8 @@ App.Group = DS.Model.extend({
 	account_id: DS.belongsTo('account'),
 	name: DS.attr('string'),
 	date_updated: DS.attr('date'),
-	members: DS.attr()
+	members: DS.attr(),
+	issue_cmd: DS.attr('boolean')
 });
 
 App.Error = DS.Model.extend({
@@ -1199,6 +1200,32 @@ App.GroupIndexRoute = Ember.Route.extend({
 
 App.GroupIndexController = Ember.Controller.extend({
 	needs: ['application'],
+	first_run: true,
+	initial: [],
+	watchIssueCmd: function(obj) {
+		var self = this;
+		var model = obj.get('model');
+		var content = model.get('content');
+		var updated = [];
+
+		initial_run = function() {
+			content.forEach(function(item) {
+				self.initial[item.get('name')] = item.get('issue_cmd');
+			});
+			self.first_run = false;
+		}
+
+		if (self.first_run) initial_run();
+
+		content.map(function(item) {
+			if (self.initial[item.get('name')] !== item.get('issue_cmd')) return item.get('id');
+		}).forEach(function(id) {
+			var group = self.store.getById('group', id);
+			if (group) group.save();
+			initial_run();
+		});
+
+	}.observes('model.@each.issue_cmd'),
 	actions: {
 		showModal: function(name, group) {
 			this.get('controllers.application').send('showModal', {name: name, model: group});
